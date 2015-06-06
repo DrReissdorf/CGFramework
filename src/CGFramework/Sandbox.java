@@ -166,7 +166,7 @@ public class Sandbox {
 
     private void createModels() {
         //shininess metal ca.10-20
-        modelList.add(new Model(meshesTriangles.get(0), new Vec3(0, 0, 0), ModelColor.silver(), SHININESS_METAL, 0.5f));
+        modelList.add(new Model(meshesTriangles.get(0), new Vec3(0, 0, 0), ModelColor.silver(), 125, 1f));
       //  for( int i= -10 ; i<30 ; i+=5) modelList.add(new Model(meshesTriangles.get(0), new Vec3(-i, -0.1f, -i), ModelColor.silver(), 50, 0.5f));
         lightModel.add(new Model( Sphere.createMesh(1f, 30, 30),sun.getPosition(), Color.yellow(),75f,2f ) );
         lightModel.add(new Model( Sphere.createMesh(1f, 30, 30),light.getPosition(),Color.lightBlue(),75f,1f ) );

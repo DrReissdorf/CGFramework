@@ -47,7 +47,7 @@ void main(void) {
       /********************/
 
       /* DIFFUSE LIGHTING SUN*/
-      float normalDotlightSun = max(dot(unitNormal, L_sun),0.2);
+      float normalDotlightSun = max(dot(unitNormal, L_sun),0.1);
       vec3 diffuseLightingSun = normalDotlightSun * sunlightColor;
       /********************/
 
@@ -61,7 +61,7 @@ void main(void) {
       if(enableSpecular==1) {
             /* SPECULAR LIGHTING SUN (BLINN-PHONG) */
             float specularIntensitySun = 0.0;
-            if(normalDotlightSun > 0.3) { // check if we are on the back of the model (where no reflection should be)
+            if(normalDotlightSun > 0.2) { // check if we are on the back of the model (where no reflection should be)
                 vec3 lightAddCamSun = L_sun+V;
                 vec3 H_sun = lightAddCamSun/sqrt(dot(lightAddCamSun,lightAddCamSun));  //H winkelhalbierende (blinn-Phong)
                 specularIntensitySun = reflectivity * 1 * max(pow( dot(unitNormal,normalize(H_sun)),shininess),0.0); //no lightintense because sun is bright overall
