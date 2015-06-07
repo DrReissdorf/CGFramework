@@ -160,7 +160,8 @@ public class Sandbox {
     }
 
     private void createMeshes() {
-        meshesTriangles.add(loadObj("Meshes/dragon.obj"));
+       meshesTriangles.add(loadObj("Meshes/tank.obj"));
+     //   meshesTriangles.add(loadObjNew("scene"));
         meshesTriangles.add(Sphere.createMesh(1f, 30, 30));
     }
 
@@ -275,6 +276,22 @@ public class Sandbox {
             return mesh;
         }
         return null;
+    }
+
+    private Mesh loadObjNew(String filename ) {
+        OBJGroup objGroup = OBJLoader.loadObjModel(filename);
+
+        float[] positions = objGroup.getPositions();
+        float[] normals = objGroup.getNormals();
+        int[] indices = objGroup.getIndices();
+        //normals = generateVertexNormals(positions, indices);
+
+        Mesh mesh = new Mesh(GL_STATIC_DRAW);
+        mesh.setAttribute(0, positions, 3);
+        mesh.setAttribute(1, normals, 3);
+        mesh.setIndices(indices);
+
+        return mesh;
     }
 
     public static float[] generateVertexNormals(float[] positions, int[] indices) {
