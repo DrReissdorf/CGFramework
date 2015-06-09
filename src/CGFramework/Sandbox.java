@@ -16,6 +16,9 @@ import static org.lwjgl.opengl.GL15.*;
 import java.io.File;
 import java.util.ArrayList;
 
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
+import math.Mat3;
 import math.Mat4;
 import math.Vec3;
 import org.lwjgl.input.Keyboard;
@@ -38,15 +41,17 @@ public class Sandbox {
     /**
      * **** Variablen fuer Praktikumsaufgaben *****
      */
-    Sun sun;
+    public static String specularModel = "Phong-Model";
+    Mat4 normalMat;
+    private float[] light1PosArray,light2PosArray;
+    private int light1PosCounter=0,light2PosCounter=0;
     private final float SHININESS_METAL = 20f;
-    private boolean enableSpecular;
-    private boolean enableSun;
+    private boolean isPhong = true;
     private ArrayList<Model> lightModel;
-    private Light light;
+    private Light light1;
+    private Light light2;
     private ArrayList<Model> modelList;
     private final Mat4 einheitsMatrix;
-    private Mat4 matrix, transformationMatrix;
     private boolean activateOrtho = false;
 
     /**
@@ -121,20 +126,21 @@ public class Sandbox {
         shaderProgram.setUniform("uView", viewMatrix);
         shaderProgram.setUniform("uProjection", projMatrix);
 
-        if(enableSun) {
-            shaderProgram.setUniform("L_sun", sun.getLightDirection());
-            shaderProgram.setUniform("sunlightColor", sun.getColor());
-        } else {
-            shaderProgram.setUniform("L_sun", new Vec3());
-            shaderProgram.setUniform("sunlightColor", new Vec3(0f,0f,0f));
-        }
+        shaderProgram.setUniform("light1Position", new Vec3(light1PosArray[light1PosCounter], light1.getPosition().y, light1PosArray[light1PosCounter+1]));
+        shaderProgram.setUniform("light1Color", light1.getColor());
+        shaderProgram.setUniform("light1Range", light1.getRange());
 
-        shaderProgram.setUniform("lightPosition", light.getPosition());
-        shaderProgram.setUniform("lightColor", light.getColor());
-        shaderProgram.setUniform("lightRange", light.getRange());
+        shaderProgram.setUniform("light2Position", new Vec3(light2PosArray[light2PosCounter], light2.getPosition().y, light2PosArray[light2PosCounter+1]));
+        shaderProgram.setUniform("light2Color", light2.getColor());
+        shaderProgram.setUniform("light2Range", light2.getRange());
 
-        if(enableSpecular) shaderProgram.setUniform("enableSpecular", 1);
-        else shaderProgram.setUniform("enableSpecular", 0);
+        if(isPhong) shaderProgram.setUniform("isPhong", 1);
+        else shaderProgram.setUniform("isPhong", 0);
+
+        normalMat = new Mat4(modelMatrix);
+        normalMat.inverse();
+        normalMat.transpose();
+        shaderProgram.setUniform("normalMat", normalMat);
 
         glCullFace(GL_BACK);
 
@@ -144,7 +150,7 @@ public class Sandbox {
             shaderProgram.setUniform("modelColor", model.getColor());
             shaderProgram.setUniform("shininess", model.getShininess());
             shaderProgram.setUniform("reflectivity", model.getReflectivity());
-            shaderProgram.setUniform("uModel", Transformation.createTransMat(modelMatrix, model.getPosition(), 1f));
+            shaderProgram.setUniform("uModel", (modelMatrix));
             model.getMesh().draw();
         }
 
@@ -154,28 +160,36 @@ public class Sandbox {
             shaderProgram.setUniform("modelColor", model.getColor());
             shaderProgram.setUniform("shininess", model.getShininess());
             shaderProgram.setUniform("reflectivity", model.getReflectivity());
-            shaderProgram.setUniform("uModel", Transformation.createTransMat(einheitsMatrix, model.getPosition().x, model.getPosition().y, model.getPosition().z, 1f)); // new MAT4 because we dont want the spheres to move when we turn the monkey
+            if(model.equals(lightModel.get(0)))
+            shaderProgram.setUniform("uModel", Transformation.createTransMat(modelMatrix, light1PosArray[light1PosCounter], model.getPosition().y, light1PosArray[light1PosCounter+1], 1f)); // new MAT4 because we dont want the spheres to move when we turn the monkey
+            else shaderProgram.setUniform("uModel", Transformation.createTransMat(modelMatrix, light2PosArray[light2PosCounter], model.getPosition().y, light2PosArray[light2PosCounter + 1], 1f));
             model.getMesh().draw();
         }
+
+        if(light1PosCounter >= light1PosArray.length-2) light1PosCounter = 0;
+        else light1PosCounter+=2;
+
+        if(light2PosCounter >= light2PosArray.length-2) light2PosCounter = 0;
+        else light2PosCounter+=2;
     }
 
     private void createMeshes() {
-       meshesTriangles.add(loadObj("Meshes/tank.obj"));
-     //   meshesTriangles.add(loadObjNew("scene"));
-        meshesTriangles.add(Sphere.createMesh(1f, 30, 30));
+        meshesTriangles.add(loadObj("Meshes/monkey_scene.obj"));
     }
 
     private void createModels() {
         //shininess metal ca.10-20
-        modelList.add(new Model(meshesTriangles.get(0), new Vec3(0, 0, 0), ModelColor.silver(), 125, 1f));
-      //  for( int i= -10 ; i<30 ; i+=5) modelList.add(new Model(meshesTriangles.get(0), new Vec3(-i, -0.1f, -i), ModelColor.silver(), 50, 0.5f));
-        lightModel.add(new Model( Sphere.createMesh(1f, 30, 30),sun.getPosition(), Color.yellow(),75f,2f ) );
-        lightModel.add(new Model( Sphere.createMesh(1f, 30, 30),light.getPosition(),Color.lightBlue(),75f,1f ) );
+        modelList.add(new Model(meshesTriangles.get(0), new Vec3(0, 0, 0), ModelColor.silver(), 32, 0.7f));
+        lightModel.add(new Model( Sphere.createMesh(0.2f, 30, 30),light1.getPosition(),Color.red(),75f,1f ) );
+        lightModel.add(new Model( Sphere.createMesh(0.2f, 30, 30),light2.getPosition(),Color.green(),75f,1f ) );
     }
 
     private void initLights() {
-        sun = new Sun(new Vec3(20f,20f,20f),new Vec3(1f, 1f, 1f));
-        light = new Light(new Vec3(-10, 5, -10), new Vec3(0.3f, 0.3f, 1.0f),30);
+        light1 = new Light(new Vec3(1, 1, 1), new Vec3(1f, 0f, 0f),3);
+        light1PosArray = createLightPosArray(2f,0.01f);
+        light2 = new Light(new Vec3(1, 1, 1), new Vec3(0f, 1f, 0f),3);
+        light2PosArray = createLightPosArray(2f,0.02f);
+
     }
 
     private void inputListener() {
@@ -201,14 +215,13 @@ public class Sandbox {
                     vSync = !vSync;
                     Display.setVSyncEnabled(vSync);
                 }
-                if (Keyboard.isKeyDown(Keyboard.KEY_P)) {
+                if (Keyboard.isKeyDown(Keyboard.KEY_O)) {
                     activateOrtho = !activateOrtho;
                 }
-                if (Keyboard.isKeyDown(Keyboard.KEY_1)) {
-                    enableSpecular = !enableSpecular;
-                }
-                if (Keyboard.isKeyDown(Keyboard.KEY_2)) {
-                    enableSun = !enableSun;
+                if (Keyboard.isKeyDown(Keyboard.KEY_P)) {
+                    isPhong = !isPhong;
+                    if(isPhong) specularModel = "Phong-Model";
+                    else specularModel = "Blinn-Phong-Model";
                 }
             }
         }
@@ -278,20 +291,18 @@ public class Sandbox {
         return null;
     }
 
-    private Mesh loadObjNew(String filename ) {
-        OBJGroup objGroup = OBJLoader.loadObjModel(filename);
+    private float[] createLightPosArray(float radius, float movingSpeed) {
+        float x = 0;
+        float[] positions = new float[(int) (((Math.PI * 2) / movingSpeed) * 2) + 1];
+        if (positions.length % 2 != 0) positions = new float[(int) (((Math.PI * 2) / movingSpeed) * 2) + 2];
 
-        float[] positions = objGroup.getPositions();
-        float[] normals = objGroup.getNormals();
-        int[] indices = objGroup.getIndices();
-        //normals = generateVertexNormals(positions, indices);
+        for (int i = 0; i < positions.length; i += 2) {
+            positions[i] = 0 + (float) sin(x) * radius;
+            positions[i + 1] = 0 + (float) cos(x) * radius;
+            x += movingSpeed;
+        }
 
-        Mesh mesh = new Mesh(GL_STATIC_DRAW);
-        mesh.setAttribute(0, positions, 3);
-        mesh.setAttribute(1, normals, 3);
-        mesh.setIndices(indices);
-
-        return mesh;
+        return positions;
     }
 
     public static float[] generateVertexNormals(float[] positions, int[] indices) {

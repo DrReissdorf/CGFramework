@@ -67,7 +67,7 @@ public class Main
 
     private static void drawAndUpdateFps() {
         if ((getTime() - oldTime) > 1000) {
-            Display.setTitle("FPS: " + frames + " FOV: " + Sandbox.fov + "     top");
+            Display.setTitle("FPS: " + frames + " FOV: " + Sandbox.fov + "   " + Sandbox.specularModel);
             frames = 0;
             oldTime += 1000;
         }

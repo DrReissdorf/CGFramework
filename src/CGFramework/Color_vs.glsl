@@ -18,18 +18,24 @@ uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProjection;
 
-uniform vec3 lightPosition;
+uniform vec3 light1Position;
+uniform vec3 light2Position;
 
 out vec3 uColor;
-out vec3 N;
-out vec3 L_light;
+out vec3 vNormal;
+out vec3 L1;
+out vec3 L2;
 out vec3 V;
 
 void main(void) {
-    vec4 worldPosition= uModel * vec4(aPosition,1.0);
-    N = (uModel * vec4(aNormal,0.0)).xyz;
-    L_light = lightPosition - worldPosition.xyz;
+    vec4 worldPosition = uModel * vec4(aPosition,1.0);
 
-    V = (inverse(uView) * vec4(0.0,0.0,0.0,1.0)).xyz - worldPosition.xyz;
-    gl_Position = uProjection * uView * worldPosition;    
+    V = -normalize( vec3(uView * worldPosition) );
+
+    L1 = normalize( mat3(uModel) * (light1Position - aPosition) );
+    L2 = normalize( mat3(uModel) * (light2Position - aPosition) );
+
+    gl_Position = uProjection * uView * worldPosition;
+
+    vNormal = aNormal;
 }
