@@ -32,14 +32,11 @@ import org.lwjgl.opengl.EXTAbgr;
 
 
 
-public class Texture
-{
+public class Texture {
 	private static HashMap<String,Integer> TextureIDs = new HashMap<String,Integer>();
 	
 	private int textureID;
-	
-	
-	
+
 	public Texture( String filename )
 	{
 		if( !TextureIDs.containsKey(filename) )
@@ -109,6 +106,7 @@ public class Texture
 		    imageBuffer.flip();
 		    
 		    int textureID = glGenTextures();
+			System.out.println("texID: "+textureID);
 		    TextureIDs.put( filename, textureID );
 		    
 		    int internalFormat = GL_RGB;

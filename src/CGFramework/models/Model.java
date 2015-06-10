@@ -1,7 +1,8 @@
-package CGFramework;
+package CGFramework.models;
 
 import math.Vec3;
 import util.Mesh;
+import util.Texture;
 
 /**
  *
@@ -9,17 +10,27 @@ import util.Mesh;
  */
 public class Model {
     private Mesh mesh;
+    private Texture texture;
     private float shininess;
     private float reflectivity;
     private Vec3 position;
     private Vec3 color;
 
-    public Model(Mesh mesh, Vec3 position, Vec3 color,float shininess, float reflectivity) {
+    public Model(Mesh mesh, Texture texture, Vec3 position, Vec3 color,float shininess, float reflectivity) {
         this.mesh = mesh;
         this.color = color;
         this.shininess = shininess;
         this.reflectivity = reflectivity;
         this.position = position;
+        this.texture = texture;
+    }
+
+    public Texture getTexture() {
+        return texture;
+    }
+
+    public void setTexture(Texture texture) {
+        this.texture = texture;
     }
 
     public Mesh getMesh() {

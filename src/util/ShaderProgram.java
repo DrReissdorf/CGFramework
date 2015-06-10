@@ -9,14 +9,12 @@ package util;
  * and use in source and binary forms, with or without modification, requires explicit permission. 
  */
 
-
-
-
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL20.*;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.HashMap;
 import math.Mat3;
@@ -25,8 +23,6 @@ import math.Vec2;
 import math.Vec3;
 import math.Vec4;
 import org.lwjgl.BufferUtils;
-
-
 
 public class ShaderProgram 
 {
@@ -177,7 +173,6 @@ public class ShaderProgram
 	{
 		glUniformMatrix4( this.getUniformLocation(uniformName), false, mat.toFloatBuffer() );
 	}
-	
 	
 	public void setUniform( String uniformName, Texture texture )
 	{

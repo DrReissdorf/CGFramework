@@ -45,14 +45,5 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library name="flag.jar">
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/src/util/flag.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
   </component>
 </module>

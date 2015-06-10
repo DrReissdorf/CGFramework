@@ -1,108 +1,81 @@
-/* 
- * Cologne University of Applied Sciences
- * Institute for Media and Imaging Technologies - Computer Graphics Group
- *
- * Copyright (c) 2012 Cologne University of Applied Sciences. All rights reserved.
- *
- * This source code is property of the Cologne University of Applied Sciences. Any redistribution
- * and use in source and binary forms, with or without modification, requires explicit permission. 
- */
-
 #version 150
 
-in vec3 N;  //normalvector
-in vec3 L1;    //L=vector to light
-in vec3 L2;
-in vec3 V; //V=vector to Camera
-in vec3 distToLightVector;
-in vec3 vNormal;
+in vec3 uPosition;
+in vec3 N;
+in vec3 V;
+
+in vec2 vTextureCoords;
+uniform sampler2D uTexture;
 
 out vec4 FragColor;
 
 uniform mat4 uModel;
 uniform mat4 uView;
-uniform mat4 normalMat;
+uniform mat4 uNormalMat;
+uniform mat4 uInvertedUView;
 
-uniform vec3 light1Color;    //color, that represents the specular reflection of the light
-uniform float light1Range;   //how far the light travels
-uniform vec3 light2Color;    //color, that represents the specular reflection of the light
-uniform float light2Range;   //how far the light travels
-uniform vec3 modelColor;
-uniform float shininess;
-uniform float reflectivity; //how much the model is gonna reflect
-uniform int isPhong;        //if this is 1, Phong-Model used, else Blinn-Phong-Model
+uniform vec3[6] uLightPosArray;
+uniform vec3[6] uLightColorArray;
+uniform float[6] uLightRange;
 
-vec3 calculateSpecularPhong(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl, float lightIntense, float ambilight) {
-    vec3 specular;
-    vec3 R = normalize(reflect(L, N));
-    if(nDotl > ambilight)
-        specular = lightIntense * lightColor * reflectivity * vec3(max(pow(dot(-R, V), shininess), 0.0));
-    return specular;
-}
+uniform float uShininess;
+uniform float uReflectivity; //how much the model is gonna reflect
+uniform vec3 uModelColor;
 
-vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl, float lightIntense, float ambilight) {
-    vec3 specular;
-    vec3 lightAddCam = L+V;
-    vec3 H = normalize( lightAddCam/sqrt(lightAddCam.x*lightAddCam.x+lightAddCam.y*lightAddCam.y+lightAddCam.z*lightAddCam.z) );
-    if(nDotl > ambilight)
-        specular = lightIntense * lightColor * reflectivity * vec3(max(pow(dot(N, H), shininess+100), 0.0));
-    return specular;
-}
-
-float attenuationOfLight (float distanceToLight, float lightStartDist, float lightEndDist) {
-    float lightIntense;
-
-    if(distanceToLight <= lightStartDist) {   //max helligkeit
-        lightIntense = 1;
-    } else if(distanceToLight >= lightEndDist) {
-        lightIntense = 0;
-    } else {
-        lightIntense = (lightEndDist-distanceToLight)/(lightEndDist-lightStartDist);
-    }
-
-    return lightIntense;
-}
-
-vec3 calculateDiffuse(vec3 N, vec3 L, vec3 lightColor, float nDotl, float lightIntense) {
-    vec3 diffuseLighting = lightColor * lightIntense * vec3(max(nDotl, 0.0));
+vec3 calculateDiffuse(vec3 N, vec3 L, vec3 lightColor, float nDotl) {
+    vec3 diffuseLighting = lightColor * vec3(max(nDotl, 0.0)) ;
     return diffuseLighting;
 }
 
+vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl, float ambilight) {
+    vec3 specular = vec3(0,0,0);
+    vec3 lightAddCam = L+V;
+    vec3 H = normalize( lightAddCam/sqrt(dot(lightAddCam,lightAddCam)) );
+    if(nDotl > ambilight)
+        specular =  lightColor * uReflectivity * vec3(max(pow(dot(N, H), uShininess+100), 0.0));
+    return specular;
+}
+
+float attenuationOfLight(vec3 vPos, vec3 lightPos, float lightStartDist, float lightEndDist) {
+    float distance = sqrt(pow(vPos.x-lightPos.x,2)+pow(vPos.y-lightPos.y,2)+pow(vPos.z-lightPos.z,2));
+    float lightIntense;
+    if(distance <= lightStartDist) {   //max helligkeit
+        lightIntense = 1;
+    } else if(distance >= lightEndDist) {
+        lightIntense = 0;
+    } else {
+        lightIntense = max( (lightEndDist-distance)/(lightEndDist-lightStartDist), 0.0 );
+    }
+    return lightIntense;
+}
+
 void main(void) {
-    vec3 N = normalize(mat3(normalMat) * vNormal);
-    float nDotl1 = dot(N, L1);
-    float nDotl2 = dot(N, L2);
-
     float ambilight = 0.05;
+    float lightStartDist = 0;
+    vec4 worldPosition = uModel * vec4(uPosition,1.0);
+    vec3 V = normalize( (uInvertedUView * vec4(0.0,0.0,0.0,1.0)).xyz - worldPosition.xyz );
 
-    float distanceToLight1 = sqrt(dot(L1,L1));
-    float lightEndDist1 = light1Range;
-    float lightStartDist1 = 0;
-    float lightIntense1 = attenuationOfLight(distanceToLight1,lightStartDist1,lightEndDist1);
+    vec3 diffuseFinal = vec3(0,0,0);
+    vec3 specularFinal = vec3(0,0,0);
+    int i;
+    for(i=0 ; i<uLightPosArray.length() ; i++) {
+        vec3 L = normalize( mat3(uModel) * (uLightPosArray[i] - uPosition) );  // licht bewegt sich mit bei linksklick
+       // vec3 L = normalize(uLightPosArray[i] - (mat3(uModel)*uPosition));    // licht bewegt sich nicht mit bei linksklick
+        float nDotl = dot(N,L);
+        float lightEndDist = uLightRange[i];
+        float lightIntense = attenuationOfLight(uPosition,uLightPosArray[i],lightStartDist,lightEndDist);
 
-    float distanceToLight2 = sqrt(dot(L2,L2));
-    float lightEndDist2 = light2Range;
-    float lightStartDist2 = 0;
-    float lightIntense2 = attenuationOfLight(distanceToLight2,lightStartDist2,lightEndDist2);
+        vec3 diffuse = calculateDiffuse(N, L, uLightColorArray[i],nDotl);
+        vec3 specular = calculateSpecularBlinn(N, V, L, uLightColorArray[i], nDotl, ambilight);
 
-    vec3 diffuseLighting1 = calculateDiffuse(N,L1,light1Color,nDotl1,lightIntense1);
-    vec3 specular1;
-    if(isPhong == 1) {
-        specular1 = calculateSpecularPhong(N, V, L1, light1Color, nDotl1, lightIntense1, ambilight);
-    } else {
-        specular1 = calculateSpecularBlinn(N, V, L1, light1Color, nDotl1, lightIntense1, ambilight);
+        diffuseFinal += diffuse*lightIntense;
+        specularFinal += specular*lightIntense;
     }
+    diffuseFinal = max(diffuseFinal,ambilight);
+    specularFinal = max(specularFinal,ambilight);
 
-    vec3 diffuseLighting2 = calculateDiffuse(N,L2, light2Color, nDotl2,lightIntense2);
-    vec3 specular2;
-    if(isPhong == 1) {
-        specular2 = calculateSpecularPhong(N, V, L2, light2Color, nDotl2, lightIntense2, ambilight);
-    } else {
-        specular2 = calculateSpecularBlinn(N, V, L2, light2Color ,nDotl2, lightIntense2, ambilight);
-    }
+    vec4 textureColor = texture(uTexture,vTextureCoords);
+    FragColor = vec4(diffuseFinal, 1.0) * textureColor + vec4(specularFinal, 1.0);
 
-    vec4 diffAndSpecLight1 = vec4(diffuseLighting1, 1.0) + vec4(specular1,1.0); //diff und specular fertig berechnet, jetzt auf fragcolor addieren
-    vec4 diffAndSpecLight2 = vec4(diffuseLighting2, 1.0) + vec4(specular2,1.0); //diff und specular fertig berechnet, jetzt auf fragcolor addieren
 
-    FragColor = diffAndSpecLight1 + diffAndSpecLight2;
 }

@@ -12,18 +12,21 @@ package CGFramework;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL30.*;
 
 import java.io.File;
 import java.util.ArrayList;
 
-import static java.lang.Math.cos;
-import static java.lang.Math.sin;
-import math.Mat3;
+import static org.lwjgl.util.glu.GLU.gluErrorString;
+
+import CGFramework.meshgenerators.Sphere;
+import CGFramework.models.Model;
 import math.Mat4;
 import math.Vec3;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
+import org.lwjgl.opengl.GL11;
 import util.*;
 
 public class Sandbox {
@@ -41,16 +44,18 @@ public class Sandbox {
     /**
      * **** Variablen fuer Praktikumsaufgaben *****
      */
-    public static String specularModel = "Phong-Model";
-    Mat4 normalMat;
-    private float[] light1PosArray,light2PosArray;
-    private int light1PosCounter=0,light2PosCounter=0;
-    private final float SHININESS_METAL = 20f;
-    private boolean isPhong = true;
+    ShaderProgAdd shaderProgAdd;
+
+    public static String specularModel = "Blinn-Phong-Model";
+    private Vec3[] lightPosArray;
+    private Vec3[] lightColorArray;
+    private float[] lightRange;
+    private boolean isPhong = false;
+    private boolean moveLight= true;
     private ArrayList<Model> lightModel;
-    private Light light1;
-    private Light light2;
+    private ArrayList<Light> lightsArray;
     private ArrayList<Model> modelList;
+    private ArrayList<Texture> textureArray;
     private final Mat4 einheitsMatrix;
     private boolean activateOrtho = false;
 
@@ -70,21 +75,25 @@ public class Sandbox {
         // handling in the lab exercise (i.e. for when uploading to Ilias or when correcting) since all code of one student
         // is kept in one package. In productive code the shaders would be put into the 'resource' directory.
         shaderProgram = new ShaderProgram(getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl");
+        shaderProgAdd = new ShaderProgAdd(getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl");
 
         einheitsMatrix = new Mat4();
         modelMatrix = new Mat4();
         viewMatrix = Mat4.translation(0.0f, 0.0f, -3.0f);
 
         lightModel = new ArrayList<>();
+        lightsArray = new ArrayList<>();
         meshesTriangles = new ArrayList<Mesh>();
         modelList = new ArrayList<Model>();
+        textureArray = new ArrayList<Texture>();
+
 
         initLights();
+        initTextures();
         createMeshes();
         createModels();
 
-        glEnable(GL_CULL_FACE);
-        glEnable(GL_DEPTH_TEST);
+        initGL();
     }
 
     /**
@@ -102,6 +111,10 @@ public class Sandbox {
      * @param deltaTime The time in seconds between the last two frames
      */
     public void update(float deltaTime) {
+        int errorFlag = glGetError();
+        if (errorFlag != GL_NO_ERROR) {
+            System.err.println(gluErrorString(errorFlag));
+        }
         cameraSpeed = 5.0f * deltaTime;
         inputListener();
     }
@@ -121,77 +134,98 @@ public class Sandbox {
         this.drawMeshes(viewMatrix, projectionMatrix);
     }
 
-    public void drawMeshes(Mat4 viewMatrix, Mat4 projMatrix) {  //runs in draw()      
+    public void drawMeshes(Mat4 viewMatrix, Mat4 projMatrix) {  //runs in draw()
         shaderProgram.useProgram();
+
         shaderProgram.setUniform("uView", viewMatrix);
         shaderProgram.setUniform("uProjection", projMatrix);
+        shaderProgram.setUniform("uInvertedUView", new Mat4(viewMatrix).inverse());
+        shaderProgram.setUniform("uNormalMat", createNormalMat(modelMatrix));
 
-        shaderProgram.setUniform("light1Position", new Vec3(light1PosArray[light1PosCounter], light1.getPosition().y, light1PosArray[light1PosCounter+1]));
-        shaderProgram.setUniform("light1Color", light1.getColor());
-        shaderProgram.setUniform("light1Range", light1.getRange());
-
-        shaderProgram.setUniform("light2Position", new Vec3(light2PosArray[light2PosCounter], light2.getPosition().y, light2PosArray[light2PosCounter+1]));
-        shaderProgram.setUniform("light2Color", light2.getColor());
-        shaderProgram.setUniform("light2Range", light2.getRange());
-
-        if(isPhong) shaderProgram.setUniform("isPhong", 1);
-        else shaderProgram.setUniform("isPhong", 0);
-
-        normalMat = new Mat4(modelMatrix);
-        normalMat.inverse();
-        normalMat.transpose();
-        shaderProgram.setUniform("normalMat", normalMat);
 
         glCullFace(GL_BACK);
+        renderLights();
 
-        /* DRAW MONKEY */
-        for(int i=0 ; i<modelList.size() ;i++) {
-            Model model = modelList.get(i);
-            shaderProgram.setUniform("modelColor", model.getColor());
-            shaderProgram.setUniform("shininess", model.getShininess());
-            shaderProgram.setUniform("reflectivity", model.getReflectivity());
-            shaderProgram.setUniform("uModel", (modelMatrix));
-            model.getMesh().draw();
-        }
-
-        /* DRAW SUN AND LIGHT*/
-        for(int i=0 ; i<lightModel.size() ;i++) {
-            Model model = lightModel.get(i);
-            shaderProgram.setUniform("modelColor", model.getColor());
-            shaderProgram.setUniform("shininess", model.getShininess());
-            shaderProgram.setUniform("reflectivity", model.getReflectivity());
-            if(model.equals(lightModel.get(0)))
-            shaderProgram.setUniform("uModel", Transformation.createTransMat(modelMatrix, light1PosArray[light1PosCounter], model.getPosition().y, light1PosArray[light1PosCounter+1], 1f)); // new MAT4 because we dont want the spheres to move when we turn the monkey
-            else shaderProgram.setUniform("uModel", Transformation.createTransMat(modelMatrix, light2PosArray[light2PosCounter], model.getPosition().y, light2PosArray[light2PosCounter + 1], 1f));
-            model.getMesh().draw();
-        }
-
-        if(light1PosCounter >= light1PosArray.length-2) light1PosCounter = 0;
-        else light1PosCounter+=2;
-
-        if(light2PosCounter >= light2PosArray.length-2) light2PosCounter = 0;
-        else light2PosCounter+=2;
+        /* DRAW Models */
+        renderModels();
     }
 
+    private void renderLights() {
+        lightPosArray = new Vec3[lightsArray.size()];
+        lightColorArray = new Vec3[lightsArray.size()];
+        lightRange = new float[lightsArray.size()];
+
+        for(int i=0 ; i<lightsArray.size() ; i++) {
+            Light l = lightsArray.get(i);
+            Model model = lightModel.get(i);
+            if(moveLight) l.updatePosition();
+            lightPosArray[i] = l.getPosition();
+            lightColorArray[i] = l.getColor();
+            lightRange[i] = l.getRange();
+            shaderProgram.setUniform("uModel", Transformation.createTransMat(modelMatrix, l.getPosition(), 1f));
+            model.getMesh().draw();
+        }
+
+        shaderProgAdd.setUniform("uLightPosArray", lightPosArray);
+        shaderProgAdd.setUniform("uLightColorArray", lightColorArray);
+        shaderProgAdd.setUniform("uLightRange", lightRange);
+    }
+
+    private void renderModels() {
+        for(int i=0 ; i<modelList.size() ;i++) {
+            Model model = modelList.get(i);
+            shaderProgram.setUniform("uTexture", model.getTexture() );
+            shaderProgram.setUniform("uModelColor", model.getColor());
+            shaderProgram.setUniform("uShininess", model.getShininess());
+            shaderProgram.setUniform("uReflectivity", model.getReflectivity());
+            shaderProgram.setUniform("uModel", modelMatrix);
+            model.getMesh().draw();
+        }
+    }
     private void createMeshes() {
         meshesTriangles.add(loadObj("Meshes/monkey_scene.obj"));
     }
 
+    private void initTextures() {
+        textureArray.add(new Texture("Textures/dragon.png"));
+        textureArray.add(new Texture("Textures/ground.png"));
+        textureArray.add(new Texture("Textures/Stone.jpg"));
+        textureArray.add(new Texture("Textures/schachbrett.jpg"));
+    }
+
     private void createModels() {
-        //shininess metal ca.10-20
-        modelList.add(new Model(meshesTriangles.get(0), new Vec3(0, 0, 0), ModelColor.silver(), 32, 0.7f));
-        lightModel.add(new Model( Sphere.createMesh(0.2f, 30, 30),light1.getPosition(),Color.red(),75f,1f ) );
-        lightModel.add(new Model( Sphere.createMesh(0.2f, 30, 30),light2.getPosition(),Color.green(),75f,1f ) );
+        modelList.add(new Model(meshesTriangles.get(0), textureArray.get(2), new Vec3(0, 0, 0), ModelColor.silver(), 32, 1f));
+
+        for(int i=0 ; i<lightsArray.size() ; i++) {
+            Light l = lightsArray.get(i);
+            lightModel.add(new Model( Sphere.createMesh(0.2f, 30, 30), textureArray.get(1), l.getPosition(),l.getColor(),75f,1f ) );
+        }
     }
 
     private void initLights() {
-        light1 = new Light(new Vec3(1, 1, 1), new Vec3(1f, 0f, 0f),3);
-        light1PosArray = createLightPosArray(2f,0.01f);
-        light2 = new Light(new Vec3(1, 1, 1), new Vec3(0f, 1f, 0f),3);
-        light2PosArray = createLightPosArray(2f,0.02f);
-
+        lightsArray.add(new Light(new Vec3(2, 1f, 2), new Vec3(1f, 1f, 1f),5f   ,2f,0.02f));
+        lightsArray.add(new Light(new Vec3(-2, 1, 2), new Vec3(0f, 1f, 0f),3f ,2f,0.04f));
+        lightsArray.add(new Light(new Vec3(0, 1, -2), new Vec3(0f, 1f, 1f),3f ,2f,0.03f));
+        lightsArray.add(new Light(new Vec3(2, 1, 2) , new Vec3(1f, 0f, 0f),3f   ,2f,0.05f));
+        lightsArray.add(new Light(new Vec3(-2, 1, 2), new Vec3(1f, 0f, 1f),3f ,2f,0.06f));
+        lightsArray.add(new Light(new Vec3(0, 1, -2), new Vec3(1f, 1f, 1f),3f ,2f,0.07f));
     }
 
+    private Mat4 createNormalMat(Mat4 modelMatrix) {
+        Mat4 normalMat;
+        normalMat = new Mat4(modelMatrix);
+        normalMat.inverse();
+        return normalMat.transpose();
+    }
+
+    private void initGL() {
+        glEnable(GL_CULL_FACE);
+        glClearDepth (1.0f);                                        // Depth Buffer Setup
+        glDepthFunc (GL_LEQUAL);                                    // The Type Of Depth Testing (Less Or Equal)
+        glEnable (GL_DEPTH_TEST);                                   // Enable Depth Testing
+        glShadeModel (GL_SMOOTH);                                   // Select Smooth Shading
+        glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);         // Set Perspective Calculations To Most Accurate
+    }
     private void inputListener() {
         if (Mouse.isButtonDown(1)) {
             deltaX = (float) Mouse.getDX();
@@ -218,10 +252,8 @@ public class Sandbox {
                 if (Keyboard.isKeyDown(Keyboard.KEY_O)) {
                     activateOrtho = !activateOrtho;
                 }
-                if (Keyboard.isKeyDown(Keyboard.KEY_P)) {
-                    isPhong = !isPhong;
-                    if(isPhong) specularModel = "Phong-Model";
-                    else specularModel = "Blinn-Phong-Model";
+                if(Keyboard.isKeyDown(Keyboard.KEY_1)) {
+                    moveLight = !moveLight;
                 }
             }
         }
@@ -279,11 +311,12 @@ public class Sandbox {
             float[] positions = group.getPositions();
             float[] normals = group.getNormals();
             int[] indices = group.getIndices();
-            //normals = generateVertexNormals(positions, indices);
+            float[] texturePositions = group.getTexCoords();
 
             Mesh mesh = new Mesh(GL_STATIC_DRAW);
             mesh.setAttribute(0, positions, 3);
             mesh.setAttribute(1, normals, 3);
+            mesh.setAttribute(2, texturePositions, 3);
             mesh.setIndices(indices);
 
             return mesh;
@@ -291,58 +324,4 @@ public class Sandbox {
         return null;
     }
 
-    private float[] createLightPosArray(float radius, float movingSpeed) {
-        float x = 0;
-        float[] positions = new float[(int) (((Math.PI * 2) / movingSpeed) * 2) + 1];
-        if (positions.length % 2 != 0) positions = new float[(int) (((Math.PI * 2) / movingSpeed) * 2) + 2];
-
-        for (int i = 0; i < positions.length; i += 2) {
-            positions[i] = 0 + (float) sin(x) * radius;
-            positions[i + 1] = 0 + (float) cos(x) * radius;
-            x += movingSpeed;
-        }
-
-        return positions;
-    }
-
-    public static float[] generateVertexNormals(float[] positions, int[] indices) {
-        Face[] faces;
-        Vec3[] vertexNormalsVectors = new Vec3[positions.length/3];
-        float[] vertexNormals;
-
-        for(int i=0; i<vertexNormalsVectors.length ; i++) {
-            vertexNormalsVectors[i] = new Vec3();
-        }
-
-        faces = new Face[indices.length/3];
-
-        System.out.println("faces size : "+faces.length);
-        System.out.println("indices size : "+indices.length);
-        System.out.println("positions size : "+positions.length);
-
-        for(int i=0 ; i<indices.length ; i+=3) {
-            faces[i/3] =  new Face(new Vec3(positions[ indices[i]*3 ], positions[ (indices[i]*3)+1 ], positions[ (indices[i]*3)+2 ]),
-                                    new Vec3(positions[ indices[i+1]*3 ], positions[ (indices[i+1]*3)+1 ], positions[ (indices[i+1]*3)+2 ]),
-                                    new Vec3(positions[ indices[i+2]*3 ], positions[ (indices[i+2]*3)+1 ], positions[ (indices[i+2]*3)+2 ]));
-
-            faces[i/3].addToIndicesList(indices[i],indices[i+1],indices[i+2]);
-        }
-
-        for(int i=0 ; i<faces.length ; i++) {
-            for(int j=0 ; j<3 ; j++) {
-                vertexNormalsVectors[faces[i].getIndicesList().get(j)].add(faces[i].getNormal());
-                vertexNormalsVectors[faces[i].getIndicesList().get(j)] = vertexNormalsVectors[faces[i].getIndicesList().get(j)].normalize();
-            }
-        }
-
-        vertexNormals = new float[vertexNormalsVectors.length*3];
-
-        for(int i=0 ; i<vertexNormalsVectors.length ; i++) {
-            vertexNormals[i*3] = vertexNormalsVectors[i].x;
-            vertexNormals[(i*3)+1] = vertexNormalsVectors[i].y;
-            vertexNormals[(i*3)+2] = vertexNormalsVectors[i].z;
-        }
-
-        return vertexNormals;
-    }
 }

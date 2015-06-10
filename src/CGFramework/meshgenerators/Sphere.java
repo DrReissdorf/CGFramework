@@ -1,13 +1,4 @@
-package CGFramework;
-
-/*
-  CG Sommer 2015
-
-  Name, Vorname   :   Sven Riedel
-  Matrikelnummer  :   11091276
-  Aufgabenblatt   :   03
-  Aufgabe         :   1
-*/
+package CGFramework.meshgenerators;
 
 import util.Mesh;
 import static org.lwjgl.opengl.GL15.*;
@@ -42,12 +33,12 @@ public class Sphere {
 	            positions[ vertex * 3 + 1 ] = (radius * y);
 	            positions[ vertex * 3 + 2 ] = (radius * z);
 
-	/*            normals[ vertex * 3 + 0 ] = x;
+	            normals[ vertex * 3 + 0 ] = x;
 	            normals[ vertex * 3 + 1 ] = y;
 	            normals[ vertex * 3 + 2 ] = z;
 
 	            texCoords[ vertex * 2 + 0 ] = u;
-	            texCoords[ vertex * 2 + 1 ] = v; */
+	            texCoords[ vertex * 2 + 1 ] = v;
 	        }
 	    }
 
@@ -70,7 +61,8 @@ public class Sphere {
 	    
 		Mesh mesh = new Mesh( GL_STATIC_DRAW );
 		mesh.setAttribute( 0, positions, 3 );
-		mesh.setAttribute( 1, Sandbox.generateVertexNormals(positions,indices), 3 );
+		mesh.setAttribute( 1, normals, 3 );
+		mesh.setAttribute( 2, texCoords, 3 );
 		mesh.setIndices( indices );
 		
 		return mesh;  
