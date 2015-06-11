@@ -12,26 +12,25 @@ package CGFramework;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL30.*;
 
 import java.io.File;
 import java.util.ArrayList;
 
 import static org.lwjgl.util.glu.GLU.gluErrorString;
 
-import CGFramework.meshgenerators.Sphere;
-import CGFramework.models.Model;
+import CGFramework.Terrain.Terrain;
+import CGFramework.models.*;
+import CGFramework.objectstorender.RenderObjects;
 import math.Mat4;
 import math.Vec3;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
-import org.lwjgl.opengl.GL11;
 import util.*;
 
 public class Sandbox {
     private final ShaderProgram shaderProgram;
-    private final ArrayList<Mesh> meshesTriangles;
+    private ArrayList<RawMesh> meshesTriangles;
     private Mat4 modelMatrix, viewMatrix, rotationX, rotationY, projectionMatrix;
     private int windowWidth, windowHeight;
     private float deltaX, deltaY;
@@ -44,16 +43,11 @@ public class Sandbox {
     /**
      * **** Variablen fuer Praktikumsaufgaben *****
      */
-    ShaderProgAdd shaderProgAdd;
-
-    private Vec3[] lightPosArray;
-    private Vec3[] lightColorArray;
-    private float[] lightRange;
+    private MasterMeshRenderer masterMeshRenderer;
+    private Terrain terrain;
+    private ShaderProgAdd shaderProgAdd;
     private boolean moveLight= true;
-    private ArrayList<Model> lightModel;
-    private ArrayList<Light> lightsArray;
-    private ArrayList<Model> modelList;
-    private ArrayList<Texture> textureArray;
+
     private final Mat4 einheitsMatrix;
     private boolean activateOrtho = false;
 
@@ -72,22 +66,17 @@ public class Sandbox {
         // The shader program source files must be put into the same package as the Sandbox class file. This simplifies the 
         // handling in the lab exercise (i.e. for when uploading to Ilias or when correcting) since all code of one student
         // is kept in one package. In productive code the shaders would be put into the 'resource' directory.
-        shaderProgram = new ShaderProgram(getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl");
-        shaderProgAdd = new ShaderProgAdd(getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl");
+        shaderProgram = new ShaderProgram(getPathForPackage() + "shader/Color_vs.glsl", getPathForPackage() + "shader/Color_fs.glsl");
+        shaderProgAdd = new ShaderProgAdd(getPathForPackage() + "shader/Color_vs.glsl", getPathForPackage() + "shader/Color_fs.glsl");
 
         einheitsMatrix = new Mat4();
         modelMatrix = new Mat4();
         viewMatrix = Mat4.translation(0.0f, 0.0f, -3.0f);
 
-        meshesTriangles = new ArrayList<Mesh>();
-        modelList = new ArrayList<Model>();
-
+        masterMeshRenderer = new MasterMeshRenderer();
         initGL();
 
-        initLights();
-        initTextures();
-        createMeshes();
-        createModels();
+        RenderObjects.createEntities(masterMeshRenderer);
     }
 
     /**
@@ -129,99 +118,39 @@ public class Sandbox {
     }
 
     public void drawMeshes(Mat4 viewMatrix, Mat4 projMatrix) {  //runs in draw()
-        shaderProgram.useProgram();
+      // shaderProgram.useProgram();
 
-        shaderProgram.setUniform("uView", viewMatrix);
-        shaderProgram.setUniform("uProjection", projMatrix);
-        shaderProgram.setUniform("uInvertedUView", new Mat4(viewMatrix).inverse());
-        shaderProgram.setUniform("uNormalMat", createNormalMat(modelMatrix));
+    //    shaderProgram.setUniform("uView", viewMatrix);
+    //    shaderProgram.setUniform("uProjection", projMatrix);
+    //    shaderProgram.setUniform("uInvertedUView", new Mat4(viewMatrix).inverse());
+
 
 
         glCullFace(GL_BACK);
-        renderLights();
-        renderModels();
+        masterMeshRenderer.renderAllEntities(shaderProgram, shaderProgAdd, modelMatrix, viewMatrix, projMatrix);
     }
 
-    private void renderLights() {
-        lightPosArray = new Vec3[lightsArray.size()];
-        lightColorArray = new Vec3[lightsArray.size()];
-        lightRange = new float[lightsArray.size()];
+   /* private void renderTerrain() {
+        shaderProgram.setUniform("uTexture", terrain.getModelTexture().getTexture() );
+        shaderProgram.setUniform("uShininess", terrain.getModelTexture().getShininess());
+        shaderProgram.setUniform("uReflectivity", terrain.getModelTexture().getReflectivity());
+        shaderProgram.setUniform("uModel", Transformation.createTransMat(modelMatrix, terrain.getPosition(), 1f));
+        terrain.getRawMesh().draw();
+    } */
 
-        for(int i=0 ; i<lightsArray.size() ; i++) {
-            Light l = lightsArray.get(i);
-            Model model = lightModel.get(i);
-            if(moveLight) l.updatePosition();
-            lightPosArray[i] = l.getPosition();
-            lightColorArray[i] = l.getColor();
-            lightRange[i] = l.getRange();
-            shaderProgram.setUniform("uModel", Transformation.createTransMat(modelMatrix, l.getPosition(), 1f));
-            model.getMesh().draw();
-        }
 
-        shaderProgAdd.setUniform("uLightPosArray", lightPosArray);
-        shaderProgAdd.setUniform("uLightColorArray", lightColorArray);
-        shaderProgAdd.setUniform("uLightRange", lightRange);
-    }
 
-    private void renderModels() {
-        for(int i=0 ; i<modelList.size() ;i++) {
-            Model model = modelList.get(i);
-            shaderProgram.setUniform("uTexture", model.getTexture() );
-            shaderProgram.setUniform("uModelColor", model.getColor());
-            shaderProgram.setUniform("uShininess", model.getShininess());
-            shaderProgram.setUniform("uReflectivity", model.getReflectivity());
-            shaderProgram.setUniform("uModel", modelMatrix);
-            model.getMesh().draw();
-        }
-    }
-
-    private void createMeshes() {
-        meshesTriangles.add(loadObj("Meshes/monkey_scene.obj"));
-    }
-
-    private void initTextures() {
-        textureArray = new ArrayList<Texture>();
-        textureArray.add(new Texture("Textures/dragon.png"));
-        textureArray.add(new Texture("Textures/ground.png"));
-        textureArray.add(new Texture("Textures/Stone.jpg"));
-        textureArray.add(new Texture("Textures/schachbrett.jpg"));
-    }
-
-    private void createModels() {
-        modelList.add(new Model(meshesTriangles.get(0), textureArray.get(2), new Vec3(0, 0, 0), ModelColor.silver(), 32, 1f));
-
-        lightModel = new ArrayList<>();
-        for(int i=0 ; i<lightsArray.size() ; i++) {
-            Light l = lightsArray.get(i);
-            lightModel.add(new Model( Sphere.createMesh(0.2f, 30, 30), textureArray.get(1), l.getPosition(),l.getColor(),75f,1f ) );
-        }
-    }
-
-    private void initLights() {
-        lightsArray = new ArrayList<>();
-
-        lightsArray.add(new Light(new Vec3(2, 1f, 2), new Vec3(1f, 1f, 1f),5f   ,2f,0.02f));
-        lightsArray.add(new Light(new Vec3(-2, 1, 2), new Vec3(0f, 1f, 0f),3f ,2f,0.04f));
-        lightsArray.add(new Light(new Vec3(0, 1, -2), new Vec3(0f, 1f, 1f),3f ,2f,0.03f));
-        lightsArray.add(new Light(new Vec3(2, 1, 2) , new Vec3(1f, 0f, 0f),3f   ,2f,0.05f));
-        lightsArray.add(new Light(new Vec3(-2, 1, 2), new Vec3(1f, 0f, 1f),3f ,2f,0.06f));
-        lightsArray.add(new Light(new Vec3(0, 1, -2), new Vec3(1f, 1f, 1f),3f ,2f,0.07f));
-    }
+ /*   private void createTerrain() {
+        terrain = new Terrain(10,10,modelTextureHashMap.get("woodplanks"),meshesTriangles.get(1));
+    } */
 
     private void initGL() {
         glEnable(GL_CULL_FACE);
       //  glClearDepth (1.0f);                                        // Depth Buffer Setup
       //  glDepthFunc (GL_LEQUAL);                                    // The Type Of Depth Testing (Less Or Equal)
-        glEnable (GL_DEPTH_TEST);                                   // Enable Depth Testing
+        glEnable(GL_DEPTH_TEST);                                   // Enable Depth Testing
       //  glShadeModel (GL_SMOOTH);                                   // Select Smooth Shading
       //  glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);         // Set Perspective Calculations To Most Accurate
-    }
-
-    private Mat4 createNormalMat(Mat4 modelMatrix) {
-        Mat4 normalMat;
-        normalMat = new Mat4(modelMatrix);
-        normalMat.inverse();
-        return normalMat.transpose();
     }
 
     private void inputListener() {
@@ -321,5 +250,6 @@ public class Sandbox {
         }
         return null;
     }
+
 
 }

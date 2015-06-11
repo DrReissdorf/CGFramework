@@ -1,10 +1,11 @@
 package CGFramework.meshgenerators;
 
+import CGFramework.models.RawMesh;
 import util.Mesh;
 import static org.lwjgl.opengl.GL15.*;
 
 public class Sphere {    
-	public static Mesh createMesh( float radius, int latitudeBands, int longitudeBands )	{
+	public static RawMesh createMesh( float radius, int latitudeBands, int longitudeBands )	{
 		int vertexCount = ( longitudeBands + 1 ) * ( latitudeBands + 1 );
 		
 		float[] positions = new float[vertexCount * 3];
@@ -59,13 +60,13 @@ public class Sphere {
 	        }
 	    }
 	    
-		Mesh mesh = new Mesh( GL_STATIC_DRAW );
-		mesh.setAttribute( 0, positions, 3 );
-		mesh.setAttribute( 1, normals, 3 );
-		mesh.setAttribute( 2, texCoords, 3 );
-		mesh.setIndices( indices );
+		RawMesh rawMesh = new RawMesh( GL_STATIC_DRAW );
+		rawMesh.setAttribute( 0, positions, 3 );
+		rawMesh.setAttribute( 1, normals, 3 );
+		rawMesh.setAttribute( 2, texCoords, 3 );
+		rawMesh.setIndices( indices );
 		
-		return mesh;  
+		return rawMesh;
 	}
         
         
