@@ -67,7 +67,7 @@ public class Main
 
     private static void drawAndUpdateFps() {
         if ((getTime() - oldTime) > 1000) {
-            Display.setTitle("FPS: " + frames + " FOV: " + Sandbox.fov + "   " + Sandbox.specularModel);
+            Display.setTitle("FPS: " + frames + " FOV: " + Sandbox.fov + "   ");
             frames = 0;
             oldTime += 1000;
         }
@@ -103,7 +103,7 @@ public class Main
         oldTime = getTime();
 
         while( !Display.isCloseRequested() && !Main.exit ) {
-            Display.sync(120);
+            Display.sync(300);
             drawAndUpdateFps();
             long time = System.nanoTime();
             deltaTime = (float)(time - lastTime) * 1e-9f;

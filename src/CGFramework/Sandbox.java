@@ -46,11 +46,9 @@ public class Sandbox {
      */
     ShaderProgAdd shaderProgAdd;
 
-    public static String specularModel = "Blinn-Phong-Model";
     private Vec3[] lightPosArray;
     private Vec3[] lightColorArray;
     private float[] lightRange;
-    private boolean isPhong = false;
     private boolean moveLight= true;
     private ArrayList<Model> lightModel;
     private ArrayList<Light> lightsArray;
@@ -81,19 +79,15 @@ public class Sandbox {
         modelMatrix = new Mat4();
         viewMatrix = Mat4.translation(0.0f, 0.0f, -3.0f);
 
-        lightModel = new ArrayList<>();
-        lightsArray = new ArrayList<>();
         meshesTriangles = new ArrayList<Mesh>();
         modelList = new ArrayList<Model>();
-        textureArray = new ArrayList<Texture>();
 
+        initGL();
 
         initLights();
         initTextures();
         createMeshes();
         createModels();
-
-        initGL();
     }
 
     /**
@@ -145,8 +139,6 @@ public class Sandbox {
 
         glCullFace(GL_BACK);
         renderLights();
-
-        /* DRAW Models */
         renderModels();
     }
 
@@ -182,11 +174,13 @@ public class Sandbox {
             model.getMesh().draw();
         }
     }
+
     private void createMeshes() {
         meshesTriangles.add(loadObj("Meshes/monkey_scene.obj"));
     }
 
     private void initTextures() {
+        textureArray = new ArrayList<Texture>();
         textureArray.add(new Texture("Textures/dragon.png"));
         textureArray.add(new Texture("Textures/ground.png"));
         textureArray.add(new Texture("Textures/Stone.jpg"));
@@ -196,6 +190,7 @@ public class Sandbox {
     private void createModels() {
         modelList.add(new Model(meshesTriangles.get(0), textureArray.get(2), new Vec3(0, 0, 0), ModelColor.silver(), 32, 1f));
 
+        lightModel = new ArrayList<>();
         for(int i=0 ; i<lightsArray.size() ; i++) {
             Light l = lightsArray.get(i);
             lightModel.add(new Model( Sphere.createMesh(0.2f, 30, 30), textureArray.get(1), l.getPosition(),l.getColor(),75f,1f ) );
@@ -203,12 +198,23 @@ public class Sandbox {
     }
 
     private void initLights() {
+        lightsArray = new ArrayList<>();
+
         lightsArray.add(new Light(new Vec3(2, 1f, 2), new Vec3(1f, 1f, 1f),5f   ,2f,0.02f));
         lightsArray.add(new Light(new Vec3(-2, 1, 2), new Vec3(0f, 1f, 0f),3f ,2f,0.04f));
         lightsArray.add(new Light(new Vec3(0, 1, -2), new Vec3(0f, 1f, 1f),3f ,2f,0.03f));
         lightsArray.add(new Light(new Vec3(2, 1, 2) , new Vec3(1f, 0f, 0f),3f   ,2f,0.05f));
         lightsArray.add(new Light(new Vec3(-2, 1, 2), new Vec3(1f, 0f, 1f),3f ,2f,0.06f));
         lightsArray.add(new Light(new Vec3(0, 1, -2), new Vec3(1f, 1f, 1f),3f ,2f,0.07f));
+    }
+
+    private void initGL() {
+        glEnable(GL_CULL_FACE);
+      //  glClearDepth (1.0f);                                        // Depth Buffer Setup
+      //  glDepthFunc (GL_LEQUAL);                                    // The Type Of Depth Testing (Less Or Equal)
+        glEnable (GL_DEPTH_TEST);                                   // Enable Depth Testing
+      //  glShadeModel (GL_SMOOTH);                                   // Select Smooth Shading
+      //  glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);         // Set Perspective Calculations To Most Accurate
     }
 
     private Mat4 createNormalMat(Mat4 modelMatrix) {
@@ -218,14 +224,6 @@ public class Sandbox {
         return normalMat.transpose();
     }
 
-    private void initGL() {
-        glEnable(GL_CULL_FACE);
-        glClearDepth (1.0f);                                        // Depth Buffer Setup
-        glDepthFunc (GL_LEQUAL);                                    // The Type Of Depth Testing (Less Or Equal)
-        glEnable (GL_DEPTH_TEST);                                   // Enable Depth Testing
-        glShadeModel (GL_SMOOTH);                                   // Select Smooth Shading
-        glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);         // Set Perspective Calculations To Most Accurate
-    }
     private void inputListener() {
         if (Mouse.isButtonDown(1)) {
             deltaX = (float) Mouse.getDX();
