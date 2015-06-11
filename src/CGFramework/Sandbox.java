@@ -118,16 +118,9 @@ public class Sandbox {
     }
 
     public void drawMeshes(Mat4 viewMatrix, Mat4 projMatrix) {  //runs in draw()
-      // shaderProgram.useProgram();
-
-    //    shaderProgram.setUniform("uView", viewMatrix);
-    //    shaderProgram.setUniform("uProjection", projMatrix);
-    //    shaderProgram.setUniform("uInvertedUView", new Mat4(viewMatrix).inverse());
-
-
-
         glCullFace(GL_BACK);
         masterMeshRenderer.renderAllEntities(shaderProgram, shaderProgAdd, modelMatrix, viewMatrix, projMatrix);
+      //  masterMeshRenderer.renderEntitiesOld(shaderProgram, shaderProgAdd, modelMatrix, viewMatrix, projMatrix);
     }
 
    /* private void renderTerrain() {

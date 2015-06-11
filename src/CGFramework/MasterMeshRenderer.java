@@ -62,12 +62,40 @@ public class MasterMeshRenderer {
             }
         }
 
-        shaderProgram.setUniform("numberOfLights",RenderObjects.getLightPosArray().length);
         shaderProgAdd.setUniform("uLightPosArray", RenderObjects.getLightPosArray());
         shaderProgAdd.setUniform("uLightColorArray", RenderObjects.getLightColorArray());
         shaderProgAdd.setUniform("uLightRange", RenderObjects.getLightRange());
 
         glBindVertexArray( 0 );
+    }
+
+    public void renderEntitiesOld(ShaderProgram shaderProgram, ShaderProgAdd shaderProgAdd, Mat4 modelMatrix, Mat4 viewMatrix, Mat4 projMatrix) {
+        shaderProgram.useProgram();
+        shaderProgram.setUniform("uView", viewMatrix);
+        shaderProgram.setUniform("uProjection", projMatrix);
+        shaderProgram.setUniform("uInvertedUView", new Mat4(viewMatrix).inverse());
+        lightCnt = 0;
+        for(Light light : RenderObjects.getLightsArray()) {
+            RenderObjects.getLightPosArray()[lightCnt] = light.getPosition();
+            RenderObjects.getLightColorArray()[lightCnt] = light.getColor();
+            RenderObjects.getLightRange()[lightCnt] = light.getRange();
+            lightCnt++;
+            light.updatePosition();
+        }
+
+        shaderProgAdd.setUniform("uLightPosArray", RenderObjects.getLightPosArray());
+        shaderProgAdd.setUniform("uLightColorArray", RenderObjects.getLightColorArray());
+        shaderProgAdd.setUniform("uLightRange", RenderObjects.getLightRange());
+
+        for (Model model : RenderObjects.getModelList()) {
+            shaderProgram.setUniform("uModel", modelMatrix);
+            shaderProgram.setUniform("uLightMat", modelMatrix);
+            shaderProgram.setUniform("uNormalMat", createNormalMat(modelMatrix));
+            shaderProgram.setUniform("uTexture", model.getModelTexture().getTexture());
+            shaderProgram.setUniform("uShininess", model.getModelTexture().getShininess());
+            shaderProgram.setUniform("uReflectivity", model.getModelTexture().getReflectivity());
+            model.getRawMesh().draw();
+        }
     }
 
     private static Mat4 createNormalMat(Mat4 modelMatrix) {

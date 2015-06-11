@@ -31,10 +31,11 @@ vec3 calculateDiffuse(vec3 N, vec3 L, vec3 lightColor, float nDotl) {
 
 vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl, float ambilight) {
     vec3 specular = vec3(0,0,0);
-    vec3 lightAddCam = L+V;
-    vec3 H = normalize( lightAddCam/sqrt(dot(lightAddCam,lightAddCam)) );
-    if(nDotl > ambilight)
+    if(nDotl > ambilight) {
+        vec3 lightAddCam = L+V;
+        vec3 H = normalize( lightAddCam/sqrt(dot(lightAddCam,lightAddCam)) );
         specular =  lightColor * uReflectivity * vec3(max(pow(dot(N, H), uShininess+100), 0.0));
+    }
     return specular;
 }
 

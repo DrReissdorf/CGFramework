@@ -42,7 +42,6 @@ public class RenderObjects {
         entityList.add(new Entity( new Model(meshesTriangles.get(0), modelTextureHashMap.get("dragon")), new Vec3(2f,0f,-3f), 0f, 0f, 0f, 1f ));
         entityList.add(new Entity( new Model(meshesTriangles.get(1), modelTextureHashMap.get("stone")), new Vec3(0f,0f,-3f), 0f, 0f, 0f, 1f ));
 
-
         for(int i=0 ; i<lightsArray.size() ; i++) {
             Light light = lightsArray.get(i);
             entityList.add( new Entity(new Model( meshesTriangles.get(3), modelTextureHashMap.get("ground")), new Vec3(0f,0f,0f),0f,0f,0f,1f, light ) );
@@ -54,7 +53,6 @@ public class RenderObjects {
         for(Entity entity : entityList) {
             masterMeshRenderer.processEntity(entity);  // Entities an renderer geben
         }
-
     }
 
     private static void createLights() {
@@ -78,7 +76,7 @@ public class RenderObjects {
         meshesTriangles.add(loadObjRaw("Meshes/dragon.obj"));
         meshesTriangles.add(loadObjRaw("Meshes/monkey_scene.obj"));
         meshesTriangles.add(TerrainGen.generateTerrain());
-        meshesTriangles.add(Sphere.createMesh(0.1f, 30, 30));
+        meshesTriangles.add(Sphere.createMesh(0.1f, 15, 15));
     }
 
     private static void createTextures() {
