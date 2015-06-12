@@ -11,7 +11,6 @@ package CGFramework;
  */
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -19,18 +18,16 @@ import java.util.ArrayList;
 import static org.lwjgl.util.glu.GLU.gluErrorString;
 
 import CGFramework.Terrain.Terrain;
-import CGFramework.models.*;
-import CGFramework.objectstorender.RenderObjects;
+import CGFramework.render.*;
+import CGFramework.render.model.*;
 import math.Mat4;
 import math.Vec3;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
-import util.*;
+import CGFramework.shader.ShaderProgram;
 
 public class Sandbox {
-    private final ShaderProgram shaderProgram;
-    private ArrayList<RawMesh> meshesTriangles;
     private Mat4 modelMatrix, viewMatrix, rotationX, rotationY, projectionMatrix;
     private int windowWidth, windowHeight;
     private float deltaX, deltaY;
@@ -40,20 +37,9 @@ public class Sandbox {
     private float far = 500.0f;
     private float cameraSpeed;
 
-    /**
-     * **** Variablen fuer Praktikumsaufgaben *****
-     */
     private MasterMeshRenderer masterMeshRenderer;
-    private Terrain terrain;
-    private ShaderProgAdd shaderProgAdd;
-    private boolean moveLight= true;
-
-    private final Mat4 einheitsMatrix;
     private boolean activateOrtho = false;
 
-    /**
-     * ***********************
-     */
     private boolean vSync = true;
 
     /**
@@ -63,31 +49,14 @@ public class Sandbox {
     public Sandbox(int width, int height) {
         windowWidth = width;
         windowHeight = height;
-        // The shader program source files must be put into the same package as the Sandbox class file. This simplifies the 
-        // handling in the lab exercise (i.e. for when uploading to Ilias or when correcting) since all code of one student
-        // is kept in one package. In productive code the shaders would be put into the 'resource' directory.
-        shaderProgram = new ShaderProgram(getPathForPackage() + "shader/Color_vs.glsl", getPathForPackage() + "shader/Color_fs.glsl");
-        shaderProgAdd = new ShaderProgAdd(getPathForPackage() + "shader/Color_vs.glsl", getPathForPackage() + "shader/Color_fs.glsl");
 
-        einheitsMatrix = new Mat4();
         modelMatrix = new Mat4();
         viewMatrix = Mat4.translation(0.0f, 0.0f, -3.0f);
 
         masterMeshRenderer = new MasterMeshRenderer();
         initGL();
 
-        RenderObjects.createEntities(masterMeshRenderer);
-    }
-
-    /**
-     * @return The path to directory where the source file of this class is
-     * located.
-     */
-    private String getPathForPackage() {
-        String locationOfSources = "src";
-        String packageName = this.getClass().getPackage().getName();
-        String path = locationOfSources + File.separator + packageName.replace(".", File.separator) + File.separator;
-        return path;
+        ModelInitializer.createEntities(masterMeshRenderer);
     }
 
     /**
@@ -98,6 +67,7 @@ public class Sandbox {
         if (errorFlag != GL_NO_ERROR) {
             System.err.println(gluErrorString(errorFlag));
         }
+
         cameraSpeed = 5.0f * deltaTime;
         inputListener();
     }
@@ -119,30 +89,17 @@ public class Sandbox {
 
     public void drawMeshes(Mat4 viewMatrix, Mat4 projMatrix) {  //runs in draw()
         glCullFace(GL_BACK);
-        masterMeshRenderer.renderAllEntities(shaderProgram, shaderProgAdd, modelMatrix, viewMatrix, projMatrix);
-      //  masterMeshRenderer.renderEntitiesOld(shaderProgram, shaderProgAdd, modelMatrix, viewMatrix, projMatrix);
+
+       // masterMeshRenderer.renderAllEntities(modelMatrix, viewMatrix, projMatrix);
+        masterMeshRenderer.renderEntitiesOld(modelMatrix, viewMatrix, projMatrix);
     }
-
-   /* private void renderTerrain() {
-        shaderProgram.setUniform("uTexture", terrain.getModelTexture().getTexture() );
-        shaderProgram.setUniform("uShininess", terrain.getModelTexture().getShininess());
-        shaderProgram.setUniform("uReflectivity", terrain.getModelTexture().getReflectivity());
-        shaderProgram.setUniform("uModel", Transformation.createTransMat(modelMatrix, terrain.getPosition(), 1f));
-        terrain.getRawMesh().draw();
-    } */
-
-
-
- /*   private void createTerrain() {
-        terrain = new Terrain(10,10,modelTextureHashMap.get("woodplanks"),meshesTriangles.get(1));
-    } */
 
     private void initGL() {
         glEnable(GL_CULL_FACE);
       //  glClearDepth (1.0f);                                        // Depth Buffer Setup
       //  glDepthFunc (GL_LEQUAL);                                    // The Type Of Depth Testing (Less Or Equal)
         glEnable(GL_DEPTH_TEST);                                   // Enable Depth Testing
-      //  glShadeModel (GL_SMOOTH);                                   // Select Smooth Shading
+  //      glShadeModel (GL_SMOOTH);                                   // Select Smooth Shading
       //  glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);         // Set Perspective Calculations To Most Accurate
     }
 
@@ -173,7 +130,7 @@ public class Sandbox {
                     activateOrtho = !activateOrtho;
                 }
                 if(Keyboard.isKeyDown(Keyboard.KEY_1)) {
-                    moveLight = !moveLight;
+                    masterMeshRenderer.setMoveLights(!masterMeshRenderer.isMoveLights());
                 }
             }
         }
@@ -218,31 +175,4 @@ public class Sandbox {
         windowWidth = width;
         windowHeight = height;
     }
-
-    /**
-     * @param filename path to obj file
-     * @return number of indices
-     */
-    private Mesh loadObj(String filename ) {
-        OBJContainer objContainer = OBJContainer.loadFile(filename);
-        ArrayList<OBJGroup> objGroups = objContainer.getGroups();
-
-        for (OBJGroup group : objGroups) {
-            float[] positions = group.getPositions();
-            float[] normals = group.getNormals();
-            int[] indices = group.getIndices();
-            float[] texturePositions = group.getTexCoords();
-
-            Mesh mesh = new Mesh(GL_STATIC_DRAW);
-            mesh.setAttribute(0, positions, 3);
-            mesh.setAttribute(1, normals, 3);
-            mesh.setAttribute(2, texturePositions, 3);
-            mesh.setIndices(indices);
-
-            return mesh;
-        }
-        return null;
-    }
-
-
 }

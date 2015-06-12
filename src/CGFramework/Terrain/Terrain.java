@@ -1,11 +1,8 @@
 package CGFramework.Terrain;
 
-import CGFramework.models.ModelTexture;
-import CGFramework.models.RawMesh;
+import CGFramework.render.model.ModelTexture;
+import CGFramework.render.model.RawMesh;
 import math.Vec3;
-import util.Mesh;
-
-import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
 
 /**
  * Created by S on 11.06.2015.

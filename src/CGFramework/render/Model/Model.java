@@ -1,8 +1,4 @@
-package CGFramework.models;
-
-import math.Vec3;
-import util.Mesh;
-import util.Texture;
+package CGFramework.render.model;
 
 /**
  *

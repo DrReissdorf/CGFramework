@@ -1,16 +1,4 @@
-package CGFramework;
-/* 
- * Cologne University of Applied Sciences
- * Institute for Media and Imaging Technologies - Computer Graphics Group
- *
- * Copyright (c) 2012 Cologne University of Applied Sciences. All rights reserved.
- *
- * This source code is property of the Cologne University of Applied Sciences. Any redistribution
- * and use in source and binary forms, with or without modification, requires explicit permission. 
- */
-
-
-
+package CGFramework.shader;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.*;
@@ -29,8 +17,7 @@ import org.lwjgl.BufferUtils;
 import util.FileIO;
 import util.Texture;
 
-
-public class ShaderProgAdd {
+public class ShaderProgram {
     private final  int maxActiveTextures  = 8;
     private static int activeTexture = 0;
 
@@ -38,7 +25,7 @@ public class ShaderProgAdd {
     private int                      m_Program;
 
 
-    public ShaderProgAdd(String vertexFile, String fragmentFile)
+    public ShaderProgram( String vertexFile, String fragmentFile )
     {
         m_UniformLocations = new HashMap<String, Integer>();
 
@@ -65,14 +52,14 @@ public class ShaderProgAdd {
 
         if ( glGetProgram(m_Program, GL_LINK_STATUS) == GL_FALSE )
         {
-            printLog(m_Program);
+            ShaderProgram.printLog( m_Program );
         }
 
         glValidateProgram( m_Program );
 
         if ( glGetProgram(m_Program, GL_VALIDATE_STATUS) == GL_FALSE )
         {
-            printLog(m_Program);
+            ShaderProgram.printLog( m_Program );
         }
     }
 
@@ -86,7 +73,7 @@ public class ShaderProgAdd {
 
         if ( glGetShader( shader, GL_COMPILE_STATUS ) == GL_FALSE )
         {
-            printLog(shader);
+            ShaderProgram.printLog( shader );
         }
 
         return shader;
@@ -131,9 +118,64 @@ public class ShaderProgAdd {
         }
     }
 
+
     public void useProgram()
     {
         glUseProgram( m_Program );
+    }
+
+
+    public void setUniform( String uniformName, int value )
+    {
+        glUniform1i( this.getUniformLocation(uniformName), value );
+    }
+
+
+    public void setUniform( String uniformName, float value )
+    {
+        glUniform1f( this.getUniformLocation(uniformName), value );
+    }
+
+
+    public void setUniform( String uniformName, Vec2 vec )
+    {
+        glUniform2f( this.getUniformLocation(uniformName), vec.x, vec.y );
+    }
+
+
+    public void setUniform( String uniformName, Vec3 vec )
+    {
+        glUniform3f( this.getUniformLocation(uniformName), vec.x, vec.y, vec.z );
+    }
+
+
+    public void setUniform( String uniformName, Vec4 vec )
+    {
+        glUniform4f( this.getUniformLocation(uniformName), vec.x, vec.y, vec.z, vec.w );
+    }
+
+
+    public void setUniform( String uniformName, Mat3 mat )
+    {
+        glUniformMatrix3( this.getUniformLocation(uniformName), false, mat.toFloatBuffer() );
+    }
+
+
+    public void setUniform( String uniformName, Mat4 mat )
+    {
+        glUniformMatrix4( this.getUniformLocation(uniformName), false, mat.toFloatBuffer() );
+    }
+
+    public void setUniform( String uniformName, Texture texture )
+    {
+        int textureSlot = GL_TEXTURE0 + activeTexture;
+        int textureID   = texture.getID();
+
+        glActiveTexture( textureSlot );
+        glBindTexture( GL_TEXTURE_2D, textureID );
+        glUniform1i( this.getUniformLocation(uniformName), activeTexture );
+
+        activeTexture = (activeTexture + 1) % maxActiveTextures;
     }
 
     public void setUniform( String uniformName, Vec3[] vecArray ) {
@@ -149,6 +191,22 @@ public class ShaderProgAdd {
         fb.put(temp);
         fb.flip();
         glUniform3(this.getUniformLocation(uniformName), fb);
+    }
+
+    public void setUniform( String uniformName, Vec4[] vecArray ) {
+        FloatBuffer fb = BufferUtils.createFloatBuffer(vecArray.length*4);
+        float[] temp = new float[vecArray.length*4];
+
+        for(int i=0 ; i<vecArray.length ; i++) {
+            temp[i*3] = vecArray[i].x;
+            temp[i*3+1] = vecArray[i].y;
+            temp[i*3+2] = vecArray[i].z;
+            temp[i*3+3] = vecArray[i].w;
+        }
+
+        fb.put(temp);
+        fb.flip();
+        glUniform4(this.getUniformLocation(uniformName), fb);
     }
 
     public void setUniform( String uniformName, float[] floats ) {

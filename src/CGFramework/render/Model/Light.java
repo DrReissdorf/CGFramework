@@ -1,4 +1,4 @@
-package CGFramework;
+package CGFramework.render.model;
 
 import math.Vec3;
 
@@ -20,7 +20,7 @@ public class Light {
         this.position = position;
         this.color = color;
         this.range = range;
-        posArray = createLightPosArray(moveRadius,movingSpeed);
+        posArray = createLightPosArray(position,moveRadius,movingSpeed);
     }
 
     public Vec3 getPosition() {
@@ -68,14 +68,14 @@ public class Light {
         else posCounter +=2;
     }
 
-    private float[] createLightPosArray(float radius, float movingSpeed) {
+    private float[] createLightPosArray(Vec3 position, float radius, float movingSpeed) {
         float x = 0;
         float[] positions = new float[(int) (((Math.PI * 2) / movingSpeed) * 2) + 1];
         if (positions.length % 2 != 0) positions = new float[(int) (((Math.PI * 2) / movingSpeed) * 2) + 2];
 
         for (int i = 0; i < positions.length; i += 2) {
-            positions[i] = 0 + (float) sin(x) * radius;
-            positions[i + 1] = 0 + (float) cos(x) * radius;
+            positions[i] = position.x + (float) sin(x) * radius;
+            positions[i + 1] = position.z + (float) cos(x) * radius;
             x += movingSpeed;
         }
 

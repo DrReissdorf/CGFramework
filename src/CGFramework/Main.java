@@ -30,9 +30,7 @@ public class Main
 
     /* Variablen fuer drawAndUpdateFps */
     private static long oldTime;
-    private static long currentTime;
     private static int frames = 0;
-
 
     public static void toggleFullscreen()
     {

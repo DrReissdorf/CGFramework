@@ -1,4 +1,4 @@
-package CGFramework.models;
+package CGFramework.render.model;
 
 import util.Texture;
 

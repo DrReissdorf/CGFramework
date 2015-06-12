@@ -1,16 +1,18 @@
 #version 150
 
+#define LIGHTS 1
+
 in vec3 uPosition;
 in vec3 N;
 in vec3 V;
 in vec2 vTextureCoords;
 
 /*** LIGHTS ***/
-in vec3[6] L;
-in float[6] attenuationArray;
-uniform vec3[6] uLightPosArray;
-uniform vec3[6] uLightColorArray;
-uniform float[6] uLightRange;
+in vec3[LIGHTS] L;
+in float[LIGHTS] attenuationArray;
+uniform vec3[LIGHTS] uLightPosArray;
+uniform vec3[LIGHTS] uLightColorArray;
+uniform float[LIGHTS] uLightRange;
 /**************/
 uniform sampler2D uTexture;
 uniform mat4 uModel;

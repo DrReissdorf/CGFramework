@@ -1,7 +1,6 @@
 package CGFramework.meshgenerators;
 
-import CGFramework.models.RawMesh;
-import util.Mesh;
+import CGFramework.render.model.RawMesh;
 
 import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
 

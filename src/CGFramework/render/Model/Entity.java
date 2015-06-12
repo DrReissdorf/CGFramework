@@ -1,7 +1,7 @@
-package CGFramework.entities;
+package CGFramework.render.model;
 
-import CGFramework.Light;
-import CGFramework.models.Model;
+import CGFramework.render.model.Light;
+import CGFramework.render.model.Model;
 import math.Vec3;
 
 /**

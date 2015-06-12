@@ -1,4 +1,4 @@
-package CGFramework.models;
+package CGFramework.render.model;
 
 import org.lwjgl.BufferUtils;
 import util.IntArrayList;
@@ -10,9 +10,6 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import org.lwjgl.BufferUtils;
 
 public class RawMesh {
     private int   m_iUsage;

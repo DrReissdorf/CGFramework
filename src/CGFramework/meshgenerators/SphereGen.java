@@ -1,10 +1,10 @@
 package CGFramework.meshgenerators;
 
-import CGFramework.models.RawMesh;
-import util.Mesh;
+import CGFramework.render.model.RawMesh;
+
 import static org.lwjgl.opengl.GL15.*;
 
-public class Sphere {    
+public class SphereGen {
 	public static RawMesh createMesh( float radius, int latitudeBands, int longitudeBands )	{
 		int vertexCount = ( longitudeBands + 1 ) * ( latitudeBands + 1 );
 		
