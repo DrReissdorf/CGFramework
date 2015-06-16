@@ -53,7 +53,7 @@ void main(void) {
         float nDotl = dot(N,L[i]);
         float lightEndDist = uLightRange[i];
         float lightIntense = attenuationArray[i];
-         lightIntense = 1;
+         //lightIntense = 1;
 
         vec3 diffuse = calculateDiffuse(N, L[i], uLightColorArray[i],nDotl);
         vec3 specular = calculateSpecularBlinn(N, V, L[i], uLightColorArray[i], nDotl, ambilight);

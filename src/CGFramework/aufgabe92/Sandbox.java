@@ -1,4 +1,4 @@
-package CGFramework; 
+package CGFramework.aufgabe92;
 /* 
  * Cologne University of Applied Sciences
  * Institute for Media and Imaging Technologies - Computer Graphics Group
@@ -9,23 +9,24 @@ package CGFramework;
  * and use in source and binary forms, with or without modification, requires explicit permission. 
  */
 
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
+import CGFramework.Light;
+import CGFramework.Model;
+import CGFramework.ModelTexture;
+import math.Mat4;
+import math.Vec3;
+import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
+import util.*;
 
 import java.io.File;
 import java.util.ArrayList;
 
-import math.Mat4;
-import math.Vec3;
-
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
-
-import util.*;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
 
 public class Sandbox
 {
-	private ShaderProgram   shaderProgram;
+	private CGFramework.ShaderProgram shaderProgram;
     private ArrayList<Light> lights = new ArrayList<>();
 	private ArrayList<Mesh> meshes = new ArrayList<>();
     private ArrayList<Model> models = new ArrayList<>();
@@ -42,21 +43,22 @@ public class Sandbox
 	 * @param width The horizontal window size in pixels
 	 * @param height The vertical window size in pixels
 	 */
-	public Sandbox( int width, int height )	{
+	public Sandbox(int width, int height)	{
 		windowWidth   = width;
 		windowHeight  = height;
 		// The shader program source files must be put into the same package as the Sandbox class file. This simplifies the 
         // handling in the lab exercise (i.e. for when uploading to Ilias or when correcting) since all code of one student
         // is kept in one package. In productive code the shaders would be put into the 'resource' directory.
-        shaderProgram = new ShaderProgram( getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl" );
+        shaderProgram = new CGFramework.ShaderProgram( getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl" );
 		modelMatrix   = new Mat4();
-		viewMatrix    = Mat4.translation( 0.0f, 0.0f, -3.0f );
-		meshes        = new ArrayList<Mesh>();
+		viewMatrix    = Mat4.translation( 0.0f, -1.0f, -4.0f );
 		createMeshes();
         createTextures();
         createLights();
         createModels();
 		glEnable( GL_DEPTH_TEST );
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
 	}
 	
 	   /**
@@ -93,6 +95,12 @@ public class Sandbox
 
 		if( Key.isPressed(Keyboard.KEY_D) )
 			viewMatrix.mul( Mat4.translation(-cameraSpeed, 0.0f, 0.0f) );
+
+		if( Key.isPressed(Keyboard.KEY_SPACE) )
+			viewMatrix.mul( Mat4.translation(0.0f, -cameraSpeed, 0.0f) );
+
+		if( Key.isPressed(Keyboard.KEY_LSHIFT) )
+			viewMatrix.mul( Mat4.translation(0.0f, cameraSpeed, 0.0f) );
 		
 		if( Mouse.isButtonDown(0) ) {
 			float rotationScale = 0.01f;
@@ -128,6 +136,10 @@ public class Sandbox
         shaderProgram.setUniform("uLightRange", lightRanges);
 
 		for( Model model : models ) {
+			shaderProgram.setUniform("uRockTex", modelTextures.get(4).getTexture());
+			shaderProgram.setUniform("uSnowTex", modelTextures.get(3).getTexture());
+			shaderProgram.setUniform("uTexNormals", modelTextures.get(2).getTexture());
+			shaderProgram.setUniform("uHeight", modelTextures.get(1).getTexture());
             shaderProgram.setUniform("uTexture",model.getModelTexture().getTexture());
             shaderProgram.setUniform("uShininess", model.getModelTexture().getShininess());
             shaderProgram.setUniform("uReflectivity", model.getModelTexture().getReflectivity());
@@ -136,7 +148,7 @@ public class Sandbox
 	}
 	
 	protected void createMeshes() {
-		loadObj("Meshes/dragon.obj");
+		loadObj("Meshes/terrain.obj");
 		
 		/*
 		 * LoadOBJ-Example
@@ -145,13 +157,17 @@ public class Sandbox
 		
 	}
 	protected void createTextures() {
-        modelTextures.add(new ModelTexture(new Texture("Textures/dragon.png"),1f,32));
+        modelTextures.add(new ModelTexture(new Texture("Textures/grass.png"), 0f, 32));
+		modelTextures.add(new ModelTexture(new Texture("Textures/height.jpg"), 0f, 32));
+		modelTextures.add(new ModelTexture(new Texture("Textures/normals.jpg"),0f,0));
+		modelTextures.add(new ModelTexture(new Texture("Textures/snow.png"),0.5f,32));
+		modelTextures.add(new ModelTexture(new Texture("Textures/rock.png"),0f,0));
 	}
     protected void createModels() {
-        models.add(new Model(meshes.get(0),modelTextures.get(0)));
+        models.add(new Model(meshes.get(0), modelTextures.get(0)));
     }
     protected void createLights() {
-        lights.add( new Light(new Vec3(10,10,10), new Vec3(1,1,1),20f));
+        lights.add( new Light(new Vec3(10,10,10), new Vec3(1,1,1),500f));
         lightPositions = new Vec3[1];
         lightColors = new Vec3[1];
         lightRanges = new float[1];

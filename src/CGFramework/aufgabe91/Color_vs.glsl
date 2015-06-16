@@ -27,7 +27,7 @@ out float[LIGHTS] attenuationArray;
 out vec2 vTextureCoords;
 
 float attenuationOfLight(vec3 vPos, vec3 lightPos, float lightStartDist, float lightEndDist) {
-    float distance = sqrt(pow(vPos.x-lightPos.x,2)+pow(vPos.y-lightPos.y,2)+pow(vPos.z-lightPos.z,2));
+    float distance = length(vPos-lightPos);
     float lightIntense;
     if(distance <= lightStartDist) {   //max helligkeit
         lightIntense = 1;
@@ -53,7 +53,7 @@ void main(void) {
     vec3 lightWorldPosition;
 
     for(i=0 ; i<L.length() ; i++) {
-        lightWorldPosition = mat3(uLightMat) * uLightPosArray[i];
+        lightWorldPosition =  uLightPosArray[i];
         L[i] = normalize(lightWorldPosition - worldPosition.xyz);
         lightEndDist = uLightRange[i];
         attenuationArray[i] = attenuationOfLight(worldPosition.xyz, lightWorldPosition, 0 , uLightRange[i] );

@@ -1,4 +1,4 @@
-package CGFramework; 
+package CGFramework.aufgabe92;
 /* 
  * Cologne University of Applied Sciences
  * Institute for Media and Imaging Technologies - Computer Graphics Group
@@ -8,6 +8,7 @@ package CGFramework;
  * This source code is property of the Cologne University of Applied Sciences. Any redistribution
  * and use in source and binary forms, with or without modification, requires explicit permission. 
  */
+
 import org.lwjgl.LWJGLException;
 import org.lwjgl.LWJGLUtil;
 import org.lwjgl.opengl.ContextAttribs;
@@ -20,13 +21,6 @@ import util.Key;
 import java.io.File;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL12.*;
-import static org.lwjgl.opengl.GL13.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL32.*;
-
 
 
 public class Main

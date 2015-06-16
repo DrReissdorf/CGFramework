@@ -8,21 +8,25 @@ in vec3 V;
 in vec2 vTextureCoords;
 
 /*** LIGHTS ***/
-in vec3[LIGHTS] L;
-in float[LIGHTS] attenuationArray;
-uniform vec3[LIGHTS] uLightPosArray;
-uniform vec3[LIGHTS] uLightColorArray;
-uniform float[LIGHTS] uLightRange;
+in vec3 L[LIGHTS];
+in float attenuationArray[LIGHTS];
+uniform vec3 uLightPosArray[LIGHTS];
+uniform vec3 uLightColorArray[LIGHTS];
+uniform float uLightRange[LIGHTS];
 /**************/
 uniform sampler2D uTexture;
+uniform sampler2D uSnowTex;
+uniform sampler2D uRockTex;
+
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uNormalMat;
 uniform mat4 uInvertedUView;
-uniform mat4 uLightMat;
 
 uniform float uShininess;
 uniform float uReflectivity; //how much the model is gonna reflect
+in vec3 localPosition;
+in vec3 localNormal;
 
 out vec4 FragColor;
 
@@ -42,7 +46,7 @@ vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl
 }
 
 void main(void) {
-    float ambilight = 0.05;
+    float ambilight = 0.00;
     float lightStartDist = 0;
 
     vec3 diffuseFinal = vec3(0,0,0);
@@ -53,7 +57,6 @@ void main(void) {
         float nDotl = dot(N,L[i]);
         float lightEndDist = uLightRange[i];
         float lightIntense = attenuationArray[i];
-         //lightIntense = 1;
 
         vec3 diffuse = calculateDiffuse(N, L[i], uLightColorArray[i],nDotl);
         vec3 specular = calculateSpecularBlinn(N, V, L[i], uLightColorArray[i], nDotl, ambilight);
@@ -64,8 +67,13 @@ void main(void) {
     diffuseFinal = max(diffuseFinal,ambilight);
     specularFinal = max(specularFinal,ambilight);
 
-    vec4 textureColor = texture(uTexture,vTextureCoords);
-    FragColor = vec4(diffuseFinal, 1.0) * textureColor + vec4(specularFinal, 1.0);
-   // FragColor = textureColor;
-  //  FragColor = vec4(vTextureCoords,1.0,1.0);
+    vec4 textureColor = texture(uTexture,vTextureCoords*20);
+    vec4 snowTexColor = texture(uSnowTex, vTextureCoords*10);
+    vec4 rockTexColor = texture(uRockTex, vTextureCoords*30);
+
+    float upDotN = dot( vec3(0.0,1.0,0.0), localNormal);
+
+    if(localPosition.y > 0.25 && upDotN >= 0.65 ) FragColor = vec4(diffuseFinal, 1.0) * snowTexColor + vec4(specularFinal, 1.0);
+    else if(upDotN < 0.65) FragColor = vec4(diffuseFinal, 1.0) * rockTexColor + vec4(specularFinal, 1.0);
+    else FragColor = vec4(diffuseFinal, 1.0) * textureColor + vec4(specularFinal, 1.0);
 }

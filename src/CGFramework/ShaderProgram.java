@@ -2,7 +2,6 @@ package CGFramework;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.*;
-import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL20.*;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
