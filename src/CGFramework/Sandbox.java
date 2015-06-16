@@ -1,5 +1,4 @@
-package CGFramework;
-
+package CGFramework; 
 /* 
  * Cologne University of Applied Sciences
  * Institute for Media and Imaging Technologies - Computer Graphics Group
@@ -11,168 +10,186 @@ package CGFramework;
  */
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.*;
 
 import java.io.File;
 import java.util.ArrayList;
 
-import static org.lwjgl.util.glu.GLU.gluErrorString;
-
-import CGFramework.Terrain.Terrain;
-import CGFramework.render.*;
-import CGFramework.render.model.*;
 import math.Mat4;
 import math.Vec3;
+
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
-import org.lwjgl.opengl.Display;
-import CGFramework.shader.ShaderProgram;
 
-public class Sandbox {
-    private Mat4 modelMatrix, viewMatrix, rotationX, rotationY, projectionMatrix;
-    private int windowWidth, windowHeight;
-    private float deltaX, deltaY;
-    private float rotationScale = 0.01f;
-    public static float fov = 60.0f;
-    private float near = 0.01f;
-    private float far = 500.0f;
-    private float cameraSpeed;
+import util.*;
 
-    private MasterMeshRenderer masterMeshRenderer;
-    private boolean activateOrtho = false;
-
-    private boolean vSync = true;
-
-    /**
-     * @param width  The horizontal window size in pixels
-     * @param height The vertical window size in pixels
+public class Sandbox
+{
+	private ShaderProgram   shaderProgram;
+    private ArrayList<Light> lights = new ArrayList<>();
+	private ArrayList<Mesh> meshes = new ArrayList<>();
+    private ArrayList<Model> models = new ArrayList<>();
+	private ArrayList<ModelTexture> modelTextures = new ArrayList<>();
+    Vec3[] lightPositions;
+    Vec3[] lightColors;
+    float[] lightRanges;
+	private Mat4            modelMatrix;
+	private Mat4            viewMatrix;
+	private int             windowWidth;
+	private int             windowHeight;
+	
+	/**
+	 * @param width The horizontal window size in pixels
+	 * @param height The vertical window size in pixels
+	 */
+	public Sandbox( int width, int height )	{
+		windowWidth   = width;
+		windowHeight  = height;
+		// The shader program source files must be put into the same package as the Sandbox class file. This simplifies the 
+        // handling in the lab exercise (i.e. for when uploading to Ilias or when correcting) since all code of one student
+        // is kept in one package. In productive code the shaders would be put into the 'resource' directory.
+        shaderProgram = new ShaderProgram( getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl" );
+		modelMatrix   = new Mat4();
+		viewMatrix    = Mat4.translation( 0.0f, 0.0f, -3.0f );
+		meshes        = new ArrayList<Mesh>();
+		createMeshes();
+        createTextures();
+        createLights();
+        createModels();
+		glEnable( GL_DEPTH_TEST );
+	}
+	
+	   /**
+     * @return The path to directory where the source file of this class is located.
      */
-    public Sandbox(int width, int height) {
-        windowWidth = width;
-        windowHeight = height;
-
-        modelMatrix = new Mat4();
-        viewMatrix = Mat4.translation(0.0f, 0.0f, -3.0f);
-
-        masterMeshRenderer = new MasterMeshRenderer();
-        initGL();
-
-        ModelInitializer.createEntities(masterMeshRenderer);
+    private String getPathForPackage() {
+        String locationOfSources = "src";
+        String packageName = this.getClass().getPackage().getName();
+        String path = locationOfSources + File.separator + packageName.replace(".", File.separator ) + File.separator;
+        return path;
     }
+	
+	/**
+	 * @param deltaTime The time in seconds between the last two frames
+	 */
+	public void update( float deltaTime )
+	{
+		if( Key.justReleased(Keyboard.KEY_ESCAPE) )
+			Main.exit();
+		
+		if( Key.justPressed(Keyboard.KEY_F) )
+			Main.toggleFullscreen();
+		
+		float cameraSpeed = 5.0f * deltaTime;
+		
+		if( Key.isPressed(Keyboard.KEY_W) )
+			viewMatrix.mul( Mat4.translation(0.0f, 0.0f, cameraSpeed) );
+		
+		if( Key.isPressed(Keyboard.KEY_S) )
+			viewMatrix.mul( Mat4.translation(0.0f, 0.0f, -cameraSpeed) );
 
-    /**
-     * @param deltaTime The time in seconds between the last two frames
-     */
-    public void update(float deltaTime) {
-        int errorFlag = glGetError();
-        if (errorFlag != GL_NO_ERROR) {
-            System.err.println(gluErrorString(errorFlag));
-        }
+		if( Key.isPressed(Keyboard.KEY_A) )
+			viewMatrix.mul( Mat4.translation(cameraSpeed, 0.0f, 0.0f) );
 
-        cameraSpeed = 5.0f * deltaTime;
-        inputListener();
+		if( Key.isPressed(Keyboard.KEY_D) )
+			viewMatrix.mul( Mat4.translation(-cameraSpeed, 0.0f, 0.0f) );
+		
+		if( Mouse.isButtonDown(0) ) {
+			float rotationScale = 0.01f;
+			float deltaX = (float) Mouse.getDX();
+			float deltaY = (float) Mouse.getDY();
+			Mat4 rotationX = Mat4.rotation( Vec3.yAxis(),  deltaX * rotationScale );
+			Mat4 rotationY = Mat4.rotation( Vec3.xAxis(), -deltaY * rotationScale );
+			modelMatrix = rotationY.mul( rotationX ).mul( modelMatrix );
+		}
+	}
+	
+	public void draw() {
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+		float fov    = 60.0f;
+		float near   = 0.01f;
+		float far    = 500.0f;
+		Mat4 projectionMatrix = Mat4.perspective( fov, windowWidth, windowHeight, near, far );
+		glViewport( 0, 0, windowWidth, windowHeight );
+		this.drawMeshes( viewMatrix, projectionMatrix );
+	}	
+	
+	public void drawMeshes( Mat4 viewMatrix, Mat4 projMatrix ) {
+		shaderProgram.useProgram();
+		shaderProgram.setUniform( "uModel",      modelMatrix );
+		shaderProgram.setUniform( "uView",       viewMatrix );  
+		shaderProgram.setUniform( "uProjection", projMatrix );
+		shaderProgram.setUniform( "uColor",      Color.green() );
+
+        shaderProgram.setUniform("uInvertedUView",      new Mat4(viewMatrix).inverse() );
+        shaderProgram.setUniform("uNormalMat", createNormalMat(modelMatrix));
+        shaderProgram.setUniform("uLightPosArray", lightPositions);
+        shaderProgram.setUniform("uLightColorArray", lightColors);
+        shaderProgram.setUniform("uLightRange", lightRanges);
+
+		for( Model model : models ) {
+            shaderProgram.setUniform("uTexture",model.getModelTexture().getTexture());
+            shaderProgram.setUniform("uShininess", model.getModelTexture().getShininess());
+            shaderProgram.setUniform("uReflectivity", model.getModelTexture().getReflectivity());
+            model.getMesh().draw(GL_TRIANGLES );
+		}
+	}
+	
+	protected void createMeshes() {
+		loadObj("Meshes/dragon.obj");
+		
+		/*
+		 * LoadOBJ-Example
+		 * loadObj("Meshes/monkey.obj");
+		 */
+		
+	}
+	protected void createTextures() {
+        modelTextures.add(new ModelTexture(new Texture("Textures/dragon.png"),1f,32));
+	}
+    protected void createModels() {
+        models.add(new Model(meshes.get(0),modelTextures.get(0)));
     }
+    protected void createLights() {
+        lights.add( new Light(new Vec3(10,10,10), new Vec3(1,1,1),20f));
+        lightPositions = new Vec3[1];
+        lightColors = new Vec3[1];
+        lightRanges = new float[1];
 
-    public void draw() {   // runs after update         
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // glClearColor(0.8f,0.8f,1,1); //hintergrund weiss
-
-        if (activateOrtho) {
-            projectionMatrix = Mat4.orthographic(-3f, 3f, 1.7f, -1.7f, near, far);
-        } else {
-            projectionMatrix = Mat4.perspective(fov, windowWidth, windowHeight, near, far);
-        }
-
-        glViewport(0, 0, windowWidth, windowHeight);
-
-        this.drawMeshes(viewMatrix, projectionMatrix);
+        lightPositions[0] = lights.get(0).getPosition();
+        lightColors[0]      = lights.get(0).getColor();
+        lightRanges[0]      = lights.get(0).getRange();
     }
+	
+	private void loadObj( String filename )
+	{
+		OBJContainer        objContainer = OBJContainer.loadFile( filename );
+		ArrayList<OBJGroup> objGroups    = objContainer.getGroups();
+		
+		for( OBJGroup group : objGroups )
+		{
+			float[] positions = group.getPositions();
+			float[] normals   = group.getNormals();
+			int[]   indices   = group.getIndices();
+			float[] textureCoords	  = group.getTexCoords();
+			
+			Mesh mesh = new Mesh( GL_STATIC_DRAW );
+			mesh.setAttribute( 0, positions, 3 );
+			mesh.setAttribute( 1, normals, 3 );
+			mesh.setAttribute( 2, textureCoords, 3 );
+			mesh.setIndices( indices );
+			
+			meshes.add( mesh );
+		}
+	}
+	
+	public void onResize( int width, int height )
+	{
+		windowWidth  = width;
+		windowHeight = height;
+	}
 
-    public void drawMeshes(Mat4 viewMatrix, Mat4 projMatrix) {  //runs in draw()
-        glCullFace(GL_BACK);
-
-       // masterMeshRenderer.renderAllEntities(modelMatrix, viewMatrix, projMatrix);
-        masterMeshRenderer.renderEntitiesOld(modelMatrix, viewMatrix, projMatrix);
-    }
-
-    private void initGL() {
-        glEnable(GL_CULL_FACE);
-      //  glClearDepth (1.0f);                                        // Depth Buffer Setup
-      //  glDepthFunc (GL_LEQUAL);                                    // The Type Of Depth Testing (Less Or Equal)
-        glEnable(GL_DEPTH_TEST);                                   // Enable Depth Testing
-  //      glShadeModel (GL_SMOOTH);                                   // Select Smooth Shading
-      //  glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);         // Set Perspective Calculations To Most Accurate
-    }
-
-    private void inputListener() {
-        if (Mouse.isButtonDown(1)) {
-            deltaX = (float) Mouse.getDX();
-            deltaY = (float) Mouse.getDY();
-            rotationX = Mat4.rotation(Vec3.yAxis(), deltaX * rotationScale);
-            rotationY = Mat4.rotation(Vec3.xAxis(), -deltaY * rotationScale);
-            viewMatrix = rotationY.mul(rotationX).mul(viewMatrix);
-        }
-
-        if (Mouse.isButtonDown(0)) {
-            deltaX = (float) Mouse.getDX();
-            deltaY = (float) Mouse.getDY();
-            rotationX = Mat4.rotation(Vec3.yAxis(), deltaX * rotationScale);
-            rotationY = Mat4.rotation(Vec3.xAxis(), -deltaY * rotationScale);
-            modelMatrix = rotationY.mul(rotationX).mul(modelMatrix);
-        }
-
-        while (Keyboard.next()) { // recognizes just one press, holding button still results in one pressfffff
-            if (Keyboard.getEventKeyState()) {
-                if (Keyboard.isKeyDown(Keyboard.KEY_V)) {
-                    vSync = !vSync;
-                    Display.setVSyncEnabled(vSync);
-                }
-                if (Keyboard.isKeyDown(Keyboard.KEY_O)) {
-                    activateOrtho = !activateOrtho;
-                }
-                if(Keyboard.isKeyDown(Keyboard.KEY_1)) {
-                    masterMeshRenderer.setMoveLights(!masterMeshRenderer.isMoveLights());
-                }
-            }
-        }
-
-        if (Keyboard.isKeyDown(Keyboard.KEY_E)) {
-            fov += 0.4f;
-        }
-        if (Keyboard.isKeyDown(Keyboard.KEY_Q)) {
-            fov -= 0.4f;
-        }
-        if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
-            if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
-                viewMatrix.mul(Mat4.translation(0.0f, 0.0f, cameraSpeed * 10));
-            } else viewMatrix.mul(Mat4.translation(0.0f, 0.0f, cameraSpeed));
-        }
-        if (Keyboard.isKeyDown(Keyboard.KEY_S)) {
-            if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
-                viewMatrix.mul(Mat4.translation(0.0f, 0.0f, -cameraSpeed * 10));
-            } else viewMatrix.mul(Mat4.translation(0.0f, 0.0f, -cameraSpeed));
-        }
-        if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
-            viewMatrix.mul(Mat4.translation(cameraSpeed, 0.0f, 0.0f));
-        }
-        if (Keyboard.isKeyDown(Keyboard.KEY_D)) {
-            viewMatrix.mul(Mat4.translation(-cameraSpeed, 0.0f, -0.0f));
-        }
-        if (Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
-            viewMatrix.mul(Mat4.translation(0.0f, -cameraSpeed, 0.0f));
-        }
-        if (Keyboard.isKeyDown(Keyboard.KEY_C)) {
-            viewMatrix.mul(Mat4.translation(0.0f, +cameraSpeed, 0.0f));
-        }
-        if (Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) {
-            Main.exit();
-        }
-        if (Keyboard.isKeyDown(Keyboard.KEY_F)) {
-            Main.toggleFullscreen();
-        }
-    }
-
-    public void onResize(int width, int height) {
-        windowWidth = width;
-        windowHeight = height;
+    private Mat4 createNormalMat(Mat4 modelMatrix) {
+        return Mat4.inverse(modelMatrix).transpose();
     }
 }

@@ -9,20 +9,28 @@ package util;
  * and use in source and binary forms, with or without modification, requires explicit permission. 
  */
 
+
+
+
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL20.*;
+
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.HashMap;
+
 import math.Mat3;
 import math.Mat4;
 import math.Vec2;
 import math.Vec3;
 import math.Vec4;
+
 import org.lwjgl.BufferUtils;
+
+
 
 public class ShaderProgram 
 {
@@ -81,7 +89,7 @@ public class ShaderProgram
 		
 		if ( glGetShader( shader, GL_COMPILE_STATUS ) == GL_FALSE ) 
 		{
-			ShaderProgram.printLog( shader );
+			ShaderProgram.printLog( type, shader );
 		}
 		
 		return shader;
@@ -103,7 +111,6 @@ public class ShaderProgram
 		return cachedLocation;
 	}
 	
-	
 	private static void printLog( int obj )
 	{
 		IntBuffer iVal = BufferUtils.createIntBuffer( 1 );
@@ -122,7 +129,36 @@ public class ShaderProgram
 			infoLog.get( infoBytes );
 			
 			String out = new String( infoBytes );
-			System.out.println( "Shader log:\n" + out );
+			System.out.println( "Error linking Shader :\n" + out );
+		}
+	}
+	
+	private static void printLog( int type, int obj )
+	{
+		IntBuffer iVal = BufferUtils.createIntBuffer( 1 );
+		glGetShader( obj, GL_INFO_LOG_LENGTH, iVal );
+
+		int length = iVal.get();
+		
+		if (length > 1) 
+		{
+			ByteBuffer infoLog = BufferUtils.createByteBuffer( length );
+			iVal.flip();
+			
+			glGetShaderInfoLog( obj, iVal, infoLog );
+			
+			byte[] infoBytes = new byte[length];
+			infoLog.get( infoBytes );
+			
+			String out = new String( infoBytes );
+
+			String shadertype = "";
+			if( type == GL_VERTEX_SHADER )
+				shadertype = "Vertex Shader";
+			if( type == GL_FRAGMENT_SHADER )
+				shadertype = "Fragment Shader";
+			
+			System.out.println( "Error in " + shadertype + " :\n" + out );
 		}
 	}
 	
@@ -156,7 +192,6 @@ public class ShaderProgram
 		glUniform3f( this.getUniformLocation(uniformName), vec.x, vec.y, vec.z );
 	}
 	
-	
 	public void setUniform( String uniformName, Vec4 vec )
 	{
 		glUniform4f( this.getUniformLocation(uniformName), vec.x, vec.y, vec.z, vec.w );
@@ -174,6 +209,7 @@ public class ShaderProgram
 		glUniformMatrix4( this.getUniformLocation(uniformName), false, mat.toFloatBuffer() );
 	}
 	
+	
 	public void setUniform( String uniformName, Texture texture )
 	{
 		int textureSlot = GL_TEXTURE0 + activeTexture;
@@ -185,4 +221,5 @@ public class ShaderProgram
 		
 		activeTexture = (activeTexture + 1) % maxActiveTextures;
 	}
+
 }

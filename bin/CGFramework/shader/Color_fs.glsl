@@ -10,16 +10,13 @@ in vec2 vTextureCoords;
 /*** LIGHTS ***/
 in vec3[LIGHTS] L;
 in float[LIGHTS] attenuationArray;
-uniform vec3[LIGHTS] uLightPosArray;
 uniform vec3[LIGHTS] uLightColorArray;
-uniform float[LIGHTS] uLightRange;
 /**************/
 uniform sampler2D uTexture;
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uNormalMat;
 uniform mat4 uInvertedUView;
-uniform mat4 uLightMat;
 
 uniform float uShininess;
 uniform float uReflectivity; //how much the model is gonna reflect
