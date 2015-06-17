@@ -35,12 +35,14 @@ vec3 calculateDiffuse(vec3 N, vec3 L, vec3 lightColor, float nDotl) {
     return diffuseLighting;
 }
 
-vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl, float ambilight) {
+vec3 calculateSpecularBlinn(vec3 N, float upDotN, vec3 V, vec3 L, vec3 lightColor, float nDotl, float ambilight) {
     vec3 specular = vec3(0,0,0);
+    float reflectivity  = uReflectivity;
+    if(localPosition.y > 0.25 && upDotN >= 0.65 ) reflectivity = 1;
     if(nDotl > ambilight) {
         vec3 lightAddCam = L+V;
         vec3 H = normalize( lightAddCam/sqrt(dot(lightAddCam,lightAddCam)) );
-        specular =  lightColor * uReflectivity * vec3(max(pow(dot(N, H), uShininess+100), 0.0));
+        specular =  lightColor * reflectivity * vec3(max(pow(dot(N, H), uShininess+100), 0.0));
     }
     return specular;
 }
@@ -52,6 +54,8 @@ void main(void) {
     vec3 diffuseFinal = vec3(0,0,0);
     vec3 specularFinal = vec3(0,0,0);
 
+    float upDotN = dot( vec3(0.0,1.0,0.0), localNormal);
+
     int i;
     for(i=0 ; i<L.length() ; i++) {
         float nDotl = dot(N,L[i]);
@@ -59,7 +63,7 @@ void main(void) {
         float lightIntense = attenuationArray[i];
 
         vec3 diffuse = calculateDiffuse(N, L[i], uLightColorArray[i],nDotl);
-        vec3 specular = calculateSpecularBlinn(N, V, L[i], uLightColorArray[i], nDotl, ambilight);
+        vec3 specular = calculateSpecularBlinn(N, upDotN, V, L[i], uLightColorArray[i], nDotl, ambilight);
 
         diffuseFinal += diffuse*lightIntense;
         specularFinal += specular*lightIntense;
@@ -71,7 +75,7 @@ void main(void) {
     vec4 snowTexColor = texture(uSnowTex, vTextureCoords*10);
     vec4 rockTexColor = texture(uRockTex, vTextureCoords*30);
 
-    float upDotN = dot( vec3(0.0,1.0,0.0), localNormal);
+
 
     if(localPosition.y > 0.25 && upDotN >= 0.65 ) FragColor = vec4(diffuseFinal, 1.0) * snowTexColor + vec4(specularFinal, 1.0);
     else if(upDotN < 0.65) FragColor = vec4(diffuseFinal, 1.0) * rockTexColor + vec4(specularFinal, 1.0);

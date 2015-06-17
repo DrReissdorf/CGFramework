@@ -49,7 +49,6 @@ void main(void) {
 
     N = normalize( mat3(uNormalMat) * uTexNormalsColor.xyz );
 
-
     localNormal = uTexNormalsColor.xyz;
 
     vec3 position =  aPosition + ( (normalize(aNormal) * heightColor.x) );  // transformed position (with height.jpg x-coord)
