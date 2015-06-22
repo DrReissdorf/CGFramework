@@ -2,7 +2,6 @@
 
 #define LIGHTS 1
 
-in vec3 uPosition;
 in vec3 N;
 in vec3 V;
 
@@ -12,19 +11,20 @@ in float[LIGHTS] attenuationArray;
 uniform vec3[LIGHTS] uLightPosArray;
 uniform vec3[LIGHTS] uLightColorArray;
 uniform float[LIGHTS] uLightRange;
+uniform float uShininess;
+uniform float uReflectivity;
 
 /**** TEXTURE *****/
 uniform sampler2D uTexture;
 in vec2 vTextureCoords;
 
-uniform mat4 uModel;
-uniform mat4 uView;
-uniform mat4 uNormalMat;
-uniform mat4 uInvertedUView;
-uniform mat4 uLightMat;
+/**** SHADOW ****/
+in vec4 vShadow;
+uniform sampler2DShadow uShadowmap;
+//uniform sampler2D uShadowmap;
 
-uniform float uShininess;
-uniform float uReflectivity; //how much the model is gonna reflect
+uniform mat4 uView;
+uniform mat4 uInvertedUView;
 
 out vec4 FragColor;
 
@@ -55,7 +55,6 @@ void main(void) {
         float nDotl = dot(N,L[i]);
         float lightEndDist = uLightRange[i];
         float lightIntense = attenuationArray[i];
-         //lightIntense = 1;
 
         vec3 diffuse = calculateDiffuse(N, L[i], uLightColorArray[i],nDotl);
         vec3 specular = calculateSpecularBlinn(N, V, L[i], uLightColorArray[i], nDotl, ambilight);
@@ -66,8 +65,16 @@ void main(void) {
     diffuseFinal = max(diffuseFinal,ambilight);
     specularFinal = max(specularFinal,ambilight);
 
+
+    //Shadow Mapping
+    float shadow_bias = 0.002;
+    vec3 coord3 = 0.5 + 0.5 * vShadow.xyz / vShadow.w;
+    coord3.z -= shadow_bias;
+    float shadowmap_factor = texture(uShadowmap, coord3);
+
+
     vec4 textureColor = texture(uTexture,vTextureCoords);
-    FragColor = vec4(diffuseFinal, 1.0) * textureColor + vec4(specularFinal, 1.0);
-   // FragColor = textureColor;
-  //  FragColor = vec4(vTextureCoords,1.0,1.0);
+    FragColor = ambilight + vec4(diffuseFinal, 1.0) * shadowmap_factor;
+ //   FragColor = vec4(diffuseFinal, 1.0) * textureColor + vec4(specularFinal, 1.0);
+
 }

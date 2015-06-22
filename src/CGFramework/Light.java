@@ -13,20 +13,15 @@ public class Light {
     private Vec3 position;
     private Vec3 color;
     private float range;
-    private float[] posArray;
-    private int posCounter = 0;
+
+    private float rotX;
+    private float rotY;
+    private float rotZ;
 
     public Light(Vec3 position, Vec3 color, float range) {
         this.position = position;
         this.color = color;
         this.range = range;
-    }
-
-    public Light(Vec3 position, Vec3 color, float range, float moveRadius, float movingSpeed) {
-        this.position = position;
-        this.color = color;
-        this.range = range;
-        posArray = createLightPosArray(position,moveRadius,movingSpeed);
     }
 
     public Vec3 getPosition() {
@@ -53,43 +48,37 @@ public class Light {
         this.range = range;
     }
 
-    public float[] getPosArray() {
-        return posArray;
+    public void increaseRotation(float dx, float dy, float dz) {
+        this.rotX += dx;
+        this.rotY += dy;
+        this.rotZ += dz;
+
+        if(rotX > 360) rotX -= 360;
+        if(rotY > 360) rotY -= 360;
+        if(rotZ > 360) rotZ -= 360;
     }
 
-    public void setPosArray(float[] posArray) {
-        this.posArray = posArray;
+    public float getRotX() {
+        return rotX;
     }
 
-    public int getPosCounter() {
-        return posCounter;
+    public void setRotX(float rotX) {
+        this.rotX = rotX;
     }
 
-    public void setPosCounter(int posCounter) {
-        this.posCounter = posCounter;
+    public float getRotY() {
+        return rotY;
     }
 
-    public void incPosCounter() {
-        if(posCounter >= posArray.length-2) posCounter = 0;
-        else posCounter +=2;
+    public void setRotY(float rotY) {
+        this.rotY = rotY;
     }
 
-    private float[] createLightPosArray(Vec3 position, float radius, float movingSpeed) {
-        float x = 0;
-        float[] positions = new float[(int) (((Math.PI * 2) / movingSpeed) * 2) + 1];
-        if (positions.length % 2 != 0) positions = new float[(int) (((Math.PI * 2) / movingSpeed) * 2) + 2];
-
-        for (int i = 0; i < positions.length; i += 2) {
-            positions[i] = position.x + (float) sin(x) * radius;
-            positions[i + 1] = position.z + (float) cos(x) * radius;
-            x += movingSpeed;
-        }
-
-        return positions;
+    public float getRotZ() {
+        return rotZ;
     }
 
-    public void updatePosition() {
-        position = new Vec3(posArray[posCounter], position.y, posArray[posCounter+1]);
-        incPosCounter();
+    public void setRotZ(float rotZ) {
+        this.rotZ = rotZ;
     }
 }

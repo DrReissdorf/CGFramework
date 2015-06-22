@@ -1,4 +1,4 @@
-package CGFramework.aufgabe91;
+package CGFramework.aufgabe10_1;
 /* 
  * Cologne University of Applied Sciences
  * Institute for Media and Imaging Technologies - Computer Graphics Group
@@ -9,6 +9,8 @@ package CGFramework.aufgabe91;
  * and use in source and binary forms, with or without modification, requires explicit permission. 
  */
 
+import CGFramework.aufgabe91.*;
+import CGFramework.aufgabe91.Sandbox;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.LWJGLUtil;
 import org.lwjgl.opengl.ContextAttribs;
@@ -81,7 +83,7 @@ public class Main {
 			e.printStackTrace();
 		}
 		
-		Sandbox sandbox   = new Sandbox( width, height );
+		CGFramework.aufgabe10_1.Sandbox sandbox   = new CGFramework.aufgabe10_1.Sandbox( width, height );
 		float   deltaTime = 0.0f;
 		long    lastTime  = 0;
 		

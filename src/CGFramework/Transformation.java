@@ -9,7 +9,17 @@ import math.Vec3;
  */
 public class Transformation {
     private static final Mat4 einheitsMatrix = new Mat4();
-    
+
+    public static Mat4 createTransformationMatrix(Vec3 translation, float rx, float ry, float rz, float scale) {
+        Mat4 matrix;
+        matrix = Mat4.translation(translation);
+        Mat4.rotation(new Vec3(1, 0, 0), (float) Math.toRadians(rx));
+        Mat4.rotation(new Vec3(0, 1, 0), (float) Math.toRadians(ry));
+        Mat4.rotation(new Vec3(0, 0, 1), (float) Math.toRadians(rz));
+        Mat4.scale(new Vec3(scale, scale, scale));
+        return matrix;
+    }
+
     public static Mat4 createTransMat(Mat4 modelMatrix, float posX, float posY, float posZ, float scale) {
         Mat4 matrix;
         matrix = Mat4.mul(Mat4.scale(scale), einheitsMatrix);

@@ -177,6 +177,17 @@ public class ShaderProgram {
         activeTexture = (activeTexture + 1) % maxActiveTextures;
     }
 
+    public void setUniformShadowTexture( String uniformName, int textureID )
+    {
+        int textureSlot = GL_TEXTURE0 + activeTexture;
+
+        glActiveTexture( textureSlot );
+        glBindTexture( GL_TEXTURE_2D, textureID );
+        glUniform1i( this.getUniformLocation(uniformName), activeTexture );
+
+        activeTexture = (activeTexture + 1) % maxActiveTextures;
+    }
+
     public void setUniform( String uniformName, Vec3[] vecArray ) {
         FloatBuffer fb = BufferUtils.createFloatBuffer(vecArray.length*3);
         float[] temp = new float[vecArray.length*3];

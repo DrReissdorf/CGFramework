@@ -12,19 +12,15 @@ in float[LIGHTS] attenuationArray;
 uniform vec3[LIGHTS] uLightPosArray;
 uniform vec3[LIGHTS] uLightColorArray;
 uniform float[LIGHTS] uLightRange;
+uniform float uShininess;
+uniform float uReflectivity;
 
 /**** TEXTURE *****/
 uniform sampler2D uTexture;
 in vec2 vTextureCoords;
 
-uniform mat4 uModel;
 uniform mat4 uView;
-uniform mat4 uNormalMat;
 uniform mat4 uInvertedUView;
-uniform mat4 uLightMat;
-
-uniform float uShininess;
-uniform float uReflectivity; //how much the model is gonna reflect
 
 out vec4 FragColor;
 
@@ -55,7 +51,6 @@ void main(void) {
         float nDotl = dot(N,L[i]);
         float lightEndDist = uLightRange[i];
         float lightIntense = attenuationArray[i];
-         //lightIntense = 1;
 
         vec3 diffuse = calculateDiffuse(N, L[i], uLightColorArray[i],nDotl);
         vec3 specular = calculateSpecularBlinn(N, V, L[i], uLightColorArray[i], nDotl, ambilight);
@@ -67,7 +62,7 @@ void main(void) {
     specularFinal = max(specularFinal,ambilight);
 
     vec4 textureColor = texture(uTexture,vTextureCoords);
-    FragColor = vec4(diffuseFinal, 1.0) * textureColor + vec4(specularFinal, 1.0);
-   // FragColor = textureColor;
-  //  FragColor = vec4(vTextureCoords,1.0,1.0);
+    FragColor = vec4(diffuseFinal, 1.0);
+ //   FragColor = vec4(diffuseFinal, 1.0) * textureColor + vec4(specularFinal, 1.0);
+
 }

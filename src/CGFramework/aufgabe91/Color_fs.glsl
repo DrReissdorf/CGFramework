@@ -5,7 +5,6 @@
 in vec3 uPosition;
 in vec3 N;
 in vec3 V;
-in vec2 vTextureCoords;
 
 /*** LIGHTS ***/
 in vec3[LIGHTS] L;
@@ -13,8 +12,11 @@ in float[LIGHTS] attenuationArray;
 uniform vec3[LIGHTS] uLightPosArray;
 uniform vec3[LIGHTS] uLightColorArray;
 uniform float[LIGHTS] uLightRange;
-/**************/
+
+/**** TEXTURE *****/
 uniform sampler2D uTexture;
+in vec2 vTextureCoords;
+
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uNormalMat;
