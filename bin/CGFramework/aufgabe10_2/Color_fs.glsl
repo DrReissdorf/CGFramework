@@ -44,7 +44,7 @@ vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl
 }
 
 void main(void) {
-    float ambilight = 0.05;
+    float ambilight = 0.2;
     float lightStartDist = 0;
 
     vec3 diffuseFinal = vec3(0,0,0);
@@ -67,14 +67,14 @@ void main(void) {
 
 
     //Shadow Mapping
-    float shadow_bias = 0.002;
+    float shadow_bias = 0.004;
     vec3 coord3 = 0.5 + 0.5 * vShadow.xyz / vShadow.w;
     coord3.z -= shadow_bias;
     float shadowmap_factor = texture(uShadowmap, coord3);
 
-
     vec4 textureColor = texture(uTexture,vTextureCoords);
     FragColor = ambilight + vec4(diffuseFinal, 1.0) * shadowmap_factor;
+   // FragColor = vec4(shadowmap_factor,shadowmap_factor,shadowmap_factor,1.0);
  //   FragColor = vec4(diffuseFinal, 1.0) * textureColor + vec4(specularFinal, 1.0);
 
 }

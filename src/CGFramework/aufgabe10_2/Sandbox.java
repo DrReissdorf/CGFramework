@@ -143,8 +143,8 @@ public class Sandbox {
 		renderShadowMap();
 
 		//NORMAL RENDER
-	//	Mat4 projectionMatrix = Mat4.perspective( fov, windowWidth, windowHeight, near, far );
-	//	this.drawMeshes( viewMatrix, projectionMatrix );
+		Mat4 projectionMatrix = Mat4.perspective( fov, windowWidth, windowHeight, near, far );
+		this.drawMeshes( viewMatrix, projectionMatrix );
 	}	
 	
 	public void drawMeshes( Mat4 viewMatrix, Mat4 projMatrix ) {
@@ -175,9 +175,9 @@ public class Sandbox {
 	}
 
 	private void renderShadowMap() {
-		glBindTexture(GL_TEXTURE_2D, 0);//To make sure the texture is not bound
-		glBindFramebuffer( GL_FRAMEBUFFER, 0);
-	//	glBindFramebuffer( GL_FRAMEBUFFER, shadowFrameBuffer);
+	//	glBindTexture(GL_TEXTURE_2D, 0);//To make sure the texture is not bound
+	//	glBindFramebuffer( GL_FRAMEBUFFER, 0);
+		glBindFramebuffer( GL_FRAMEBUFFER, shadowFrameBuffer);
 
 		glViewport( 0, 0, 1024, 1024 );
 		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT|GL11.GL_DEPTH_BUFFER_BIT);
@@ -190,21 +190,17 @@ public class Sandbox {
 		lights.get(0).increaseRotation(0,0.2f,0);
 		createLightArrays(lights);
 
-		int err = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if( err != GL_FRAMEBUFFER_COMPLETE) {
-			System.out.println("Frame buffer is not complete. Error: " + err);
-			System.exit(-1);
-		}
+
 
 		lightViewMatrix = Mat4.lookAt(lightPositions[0], new Vec3(), new Vec3(0, 1, 0));
 
 		//render shadow scene
 		drawMeshesShadow();
 
-	//	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT|GL11.GL_DEPTH_BUFFER_BIT);
-//		GL11.glClearColor(0, 0, 0, 1);
-//		glViewport( 0, 0, windowWidth, windowHeight );
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT|GL11.GL_DEPTH_BUFFER_BIT);
+		GL11.glClearColor(0, 0, 0, 1);
+		glViewport( 0, 0, windowWidth, windowHeight );
 	}
 
 	public void drawMeshesShadow ( ) {
@@ -229,6 +225,8 @@ public class Sandbox {
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 		glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowMapSize, shadowMapSize,
 				0, GL_DEPTH_COMPONENT, GL_FLOAT, (ByteBuffer)null );
 		glBindTexture( GL_TEXTURE_2D, 0 );
@@ -245,12 +243,16 @@ public class Sandbox {
 
 		depthrenderbuffer = glGenRenderbuffers();
 		glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, shadowMapSize, shadowMapSize);
 
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, shadowMapSize, shadowMapSize);
-
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
 				GL_RENDERBUFFER, depthrenderbuffer);
 
+		int err = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		if( err != GL_FRAMEBUFFER_COMPLETE) {
+			System.out.println("Frame buffer is not complete. Error: " + err);
+			System.exit(-1);
+		}
 
 		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
