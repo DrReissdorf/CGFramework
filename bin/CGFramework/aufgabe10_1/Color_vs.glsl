@@ -53,7 +53,7 @@ void main(void) {
     vec3 lightWorldPosition;
 
     for(i=0 ; i<L.length() ; i++) {
-        lightWorldPosition =  uLightPosArray[i];
+        lightWorldPosition = uLightPosArray[i];
         L[i] = normalize(lightWorldPosition - worldPosition.xyz);
         lightEndDist = uLightRange[i];
         attenuationArray[i] = attenuationOfLight(worldPosition.xyz, lightWorldPosition, 0 , uLightRange[i] );

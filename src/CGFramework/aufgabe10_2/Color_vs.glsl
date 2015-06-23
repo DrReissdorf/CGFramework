@@ -43,8 +43,11 @@ float attenuationOfLight(vec3 vPos, vec3 lightPos, float lightStartDist, float l
 
 void main(void) {
     vTextureCoords = textureCoords;
-    vec4 worldPosition = uModel * vec4(aPosition,1.0);
+
+    // VertexPosition aus Sicht der Lichtquelle
     vShadow = uLightProjection * uLightView * vec4(aPosition,1.0);
+
+    vec4 worldPosition = uModel * vec4(aPosition,1.0);
 
     N = normalize( aNormal );
     V = normalize( (uInvertedUView * vec4(0.0,0.0,0.0,1.0)).xyz - worldPosition.xyz );

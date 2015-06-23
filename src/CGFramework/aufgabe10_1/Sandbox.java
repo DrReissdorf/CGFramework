@@ -127,7 +127,7 @@ public class Sandbox {
 
 		Mat4 lightProjectionMatrix = Mat4.perspective(lightFov, windowWidth, windowHeight, near, far);
 		glViewport( 0, 0, windowWidth, windowHeight );
-		lights.get(0).increaseRotation(0,0.2f,0);
+		lights.get(0).moveOnCircle();
 		createLightArrays(lights);
 		this.drawMeshes( Mat4.lookAt(lightPositions[0], new Vec3(), new Vec3(0,1,0)), lightProjectionMatrix );
 	}	
@@ -165,8 +165,7 @@ public class Sandbox {
     }
 
 	protected void createLights() {
-        lights.add( new Light(new Vec3(3,3,3), new Vec3(1,1,1),10f));
-
+        lights.add( new Light(new Vec3(3,3,3), new Vec3(1,1,1),10f,3f,0.03f));
     }
 
 	protected void createLightArrays(List<Light> lightList) {

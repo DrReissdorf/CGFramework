@@ -147,26 +147,21 @@ public class Sandbox
 		}
 	}
 	
-	protected void createMeshes() {
+	private void createMeshes() {
 		loadObj("Meshes/terrain.obj");
 		
-		/*
-		 * LoadOBJ-Example
-		 * loadObj("Meshes/monkey.obj");
-		 */
-		
 	}
-	protected void createTextures() {
+	private void createTextures() {
         modelTextures.add(new ModelTexture(new Texture("Textures/grass.png"), 0f, 32));
 		modelTextures.add(new ModelTexture(new Texture("Textures/height.jpg"), 0f, 32));
 		modelTextures.add(new ModelTexture(new Texture("Textures/normals.jpg"),0f,0));
 		modelTextures.add(new ModelTexture(new Texture("Textures/snow.png"),0.5f,32));
 		modelTextures.add(new ModelTexture(new Texture("Textures/rock.png"),0f,0));
 	}
-    protected void createModels() {
+	private void createModels() {
         models.add(new Model(meshes.get(0), modelTextures.get(0)));
     }
-    protected void createLights() {
+	private void createLights() {
         lights.add( new Light(new Vec3(10,10,10), new Vec3(1,1,1),500f));
         lightPositions = new Vec3[1];
         lightColors = new Vec3[1];

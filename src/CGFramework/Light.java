@@ -2,9 +2,6 @@ package CGFramework;
 
 import math.Vec3;
 
-import static java.lang.Math.cos;
-import static java.lang.Math.sin;
-
 /**
  *
  * @author Sven Riedel
@@ -18,10 +15,25 @@ public class Light {
     private float rotY;
     private float rotZ;
 
+    float distanceToOrigin;
+    private float circleMoveSpeed;
+    private float circleMoveAngle = 0;
+    private float circleMoveRadius;
+
     public Light(Vec3 position, Vec3 color, float range) {
         this.position = position;
         this.color = color;
         this.range = range;
+    }
+
+    public Light(Vec3 position, Vec3 color, float range, float circleMoveRadius, float circleMoveSpeed) {
+        this.position = position;
+        this.color = color;
+        this.range = range;
+        this.circleMoveSpeed = circleMoveSpeed;
+        this.circleMoveRadius = circleMoveRadius;
+        distanceToOrigin = Vec3.length( new Vec3().sub(position) );
+        System.out.println("dist: "+distanceToOrigin);
     }
 
     public Vec3 getPosition() {
@@ -70,5 +82,12 @@ public class Light {
 
     public void setRotZ(float rotZ) {
         this.rotZ = rotZ;
+    }
+
+    public void moveOnCircle() {
+        position.x = 0 + (float)Math.sin(circleMoveAngle) * distanceToOrigin;
+        position.z = 0 + (float)Math.cos(circleMoveAngle) * distanceToOrigin;
+
+        circleMoveAngle += circleMoveSpeed;
     }
 }
