@@ -130,11 +130,11 @@ public class Sandbox {
 		float far    = 500.0f;
 		float lightFov    = 90f;
 
-		lights.get(0).moveOnCircle();
+		lights.get(0).moveAroundCenter();
         createLightArrays(lights);
 		//SET UP VIEW AND PROJECTION MATRICES
 		Mat4 projectionMatrix = Mat4.perspective( fov, windowWidth, windowHeight, near, far );
-		Mat4 lightProjectionMatrix = Mat4.perspective(lightFov, shadowMapSize, shadowMapSize, 0.1f, 200);
+		Mat4 lightProjectionMatrix = Mat4.perspective(lightFov, shadowMapSize, shadowMapSize, 0.1f, lights.get(0).getRange());
 		Mat4 lightViewMatrix = Mat4.lookAt(lightPositions[0], new Vec3(), new Vec3(0, 1, 0));
 
 		//SHADOW MAPPING RENDER
@@ -243,7 +243,7 @@ public class Sandbox {
     }
 
 	private void createLights() {
-		lights.add( new Light(new Vec3(3,3,3), new Vec3(1,1,1),10f,3f,0.03f));
+		lights.add( new Light(new Vec3(3,3,3), new Vec3(1,1,1),10f,0.03f));
     }
 
 	private void createLightArrays(List<Light> lightList) {

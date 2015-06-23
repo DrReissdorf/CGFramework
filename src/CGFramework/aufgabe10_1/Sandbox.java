@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import CGFramework.*;
-import CGFramework.aufgabe91.Main;
 import math.Mat4;
 import math.Vec3;
 
@@ -25,7 +24,6 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
 import util.*;
-import util.ShaderProgram;
 
 public class Sandbox {
 	private CGFramework.ShaderProgram shaderProgram;
@@ -127,7 +125,7 @@ public class Sandbox {
 
 		Mat4 lightProjectionMatrix = Mat4.perspective(lightFov, windowWidth, windowHeight, near, far);
 		glViewport( 0, 0, windowWidth, windowHeight );
-		lights.get(0).moveOnCircle();
+		lights.get(0).moveAroundCenter();
 		createLightArrays(lights);
 		this.drawMeshes( Mat4.lookAt(lightPositions[0], new Vec3(), new Vec3(0,1,0)), lightProjectionMatrix );
 	}	
@@ -165,7 +163,7 @@ public class Sandbox {
     }
 
 	protected void createLights() {
-        lights.add( new Light(new Vec3(3,3,3), new Vec3(1,1,1),10f,3f,0.03f));
+        lights.add( new Light(new Vec3(3,3,3), new Vec3(1,1,1),10f,0.03f));
     }
 
 	protected void createLightArrays(List<Light> lightList) {

@@ -18,7 +18,6 @@ public class Light {
     float distanceToOrigin;
     private float circleMoveSpeed;
     private float circleMoveAngle = 0;
-    private float circleMoveRadius;
 
     public Light(Vec3 position, Vec3 color, float range) {
         this.position = position;
@@ -26,12 +25,11 @@ public class Light {
         this.range = range;
     }
 
-    public Light(Vec3 position, Vec3 color, float range, float circleMoveRadius, float circleMoveSpeed) {
+    public Light(Vec3 position, Vec3 color, float range, float circleMoveSpeed) {
         this.position = position;
         this.color = color;
         this.range = range;
         this.circleMoveSpeed = circleMoveSpeed;
-        this.circleMoveRadius = circleMoveRadius;
         distanceToOrigin = Vec3.length( new Vec3().sub(position) );
         System.out.println("dist: "+distanceToOrigin);
     }
@@ -84,7 +82,7 @@ public class Light {
         this.rotZ = rotZ;
     }
 
-    public void moveOnCircle() {
+    public void moveAroundCenter() {
         position.x = 0 + (float)Math.sin(circleMoveAngle) * distanceToOrigin;
         position.z = 0 + (float)Math.cos(circleMoveAngle) * distanceToOrigin;
 

@@ -47,11 +47,12 @@ float getAttenuation( vec4 shadowmapCoord ) {
 }
 
 float getAttenuationPCF( vec4 shadowmapCoord ) {
- return 0f;
+    float lol = 0;
+    return lol;
 }
 
 void main(void) {
-    float ambilight = 0.05;
+    float ambilight = 0.1;
     float lightStartDist = 0;
 
     vec3 diffuseFinal = vec3(0,0,0);
@@ -68,13 +69,13 @@ void main(void) {
         diffuseFinal += diffuse*lightIntense;
         specularFinal += specular*lightIntense;
     }
-    diffuseFinal = max(diffuseFinal,ambilight);
-    specularFinal = max(specularFinal,ambilight);
+    diffuseFinal = max(diffuseFinal,0);
+    specularFinal = max(specularFinal,0);
 
 
   //  vec4 textureColor = texture(uTexture,vTextureCoords);
 
-    FragColor = ambilight + vec4(diffuseFinal, 1.0) * getAttenuation(vShadow) + vec4(specularFinal, 1.0);
+    FragColor =  ambilight + (vec4(diffuseFinal, 1.0) * getAttenuation(vShadow)) + vec4(specularFinal, 1.0);
 
    // FragColor = vec4(shadowmap_factor,shadowmap_factor,shadowmap_factor,1.0);
  //   FragColor = vec4(diffuseFinal, 1.0) * textureColor + vec4(specularFinal, 1.0);
