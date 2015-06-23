@@ -10,10 +10,7 @@ layout(location=2) in vec2 textureCoords;
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProjection;
-uniform mat4 uNormalMat;
-uniform mat4 uLightMat;
 uniform mat4 uInvertedUView;
-uniform int numberOfLights;
 
 out vec3 uPosition;
 out vec3 N;
@@ -26,6 +23,7 @@ out float[LIGHTS] attenuationArray;
 
 out vec2 vTextureCoords;
 
+// SHADOW
 uniform mat4 uLightProjection;
 uniform mat4 uLightView;
 out vec4 vShadow;
@@ -44,23 +42,18 @@ float attenuationOfLight(vec3 vPos, vec3 lightPos, float lightStartDist, float l
 }
 
 void main(void) {
-    vShadow = uLightProjection * uLightView * vec4(aPosition,1.0);
-
     vTextureCoords = textureCoords;
-
     vec4 worldPosition = uModel * vec4(aPosition,1.0);
-  //  vShadow = uLightProjection * uLightView * worldPosition;
-
+    vShadow = uLightProjection * uLightView * vec4(aPosition,1.0);
 
     N = normalize( aNormal );
     V = normalize( (uInvertedUView * vec4(0.0,0.0,0.0,1.0)).xyz - worldPosition.xyz );
 
-    int i;
     float lightEndDist;
     vec3 lightWorldPosition;
-
+    int i;
     for(i=0 ; i<L.length() ; i++) {
-        lightWorldPosition =  uLightPosArray[i];
+        lightWorldPosition = uLightPosArray[i];
         L[i] = normalize(lightWorldPosition - worldPosition.xyz);
         lightEndDist = uLightRange[i];
         attenuationArray[i] = attenuationOfLight(worldPosition.xyz, lightWorldPosition, 0 , uLightRange[i] );

@@ -22,6 +22,7 @@ import util.*;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,20 +41,19 @@ public class Sandbox {
 	private ArrayList<Mesh> meshes = new ArrayList<>();
     private ArrayList<Model> models = new ArrayList<>();
 	private ArrayList<ModelTexture> modelTextures = new ArrayList<>();
-    Vec3[] lightPositions;
-    Vec3[] lightColors;
-    float[] lightRanges;
+
+	private Vec3[] lightPositions;
+	private Vec3[] lightColors;
+	private float[] lightRanges;
+
 	private Mat4            modelMatrix;
 	private Mat4            viewMatrix;
 	private int             windowWidth;
 	private int             windowHeight;
 
-	private Mat4 lightViewMatrix;
-	private Mat4 lightProjectionMatrix;
 	private int shadowFrameBuffer;
 	private int shadowTextureID;
-	private int depthrenderbuffer;
-
+	private int shadowMapSize;
 	
 	/**
 	 * @param width The horizontal window size in pixels
@@ -69,18 +69,19 @@ public class Sandbox {
 
 		modelMatrix   = new Mat4();
 		viewMatrix    = Mat4.translation( 0.0f, 0.0f, -3.0f );
-		meshes        = new ArrayList<Mesh>();
+		meshes        = new ArrayList<>();
 
 		createLights();
+		createLightArrays(lights);
 		createMeshes();
 		createTextures();
         createModels();
 
-		setupShadowMap(1024);
+		shadowMapSize = 512;
+		setupShadowMap(shadowMapSize);
 
-		glEnable( GL_DEPTH_TEST );
+		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
 	}
 	
 	   /**
@@ -139,15 +140,29 @@ public class Sandbox {
 		float near   = 0.01f;
 		float far    = 500.0f;
 
+
+        createLightArrays(lights);
+		//SET UP VIEW AND PROJECTION MATRICES
+		Mat4 projectionMatrix = Mat4.perspective( fov, windowWidth, windowHeight, near, far );
+		Mat4 lightProjectionMatrix = Mat4.perspective(90, shadowMapSize, shadowMapSize, 0.1f, 200);
+		Mat4 lightViewMatrix = Mat4.lookAt(lightPositions[0], new Vec3(), new Vec3(0, 1, 0));
+
 		//SHADOW MAPPING RENDER
-		renderShadowMap();
+		glBindFramebuffer( GL_FRAMEBUFFER, shadowFrameBuffer);
+		GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
+		glViewport( 0, 0, shadowMapSize, shadowMapSize );
+		drawMeshesShadow(lightViewMatrix, lightProjectionMatrix);
 
 		//NORMAL RENDER
-		Mat4 projectionMatrix = Mat4.perspective( fov, windowWidth, windowHeight, near, far );
-		this.drawMeshes( viewMatrix, projectionMatrix );
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT|GL11.GL_DEPTH_BUFFER_BIT);
+		GL11.glClearColor(0, 0, 0, 1);
+		glViewport( 0, 0, windowWidth, windowHeight );
+		this.drawMeshes( viewMatrix, projectionMatrix, lightViewMatrix, lightProjectionMatrix );
 	}	
 	
-	public void drawMeshes( Mat4 viewMatrix, Mat4 projMatrix ) {
+	public void drawMeshes( Mat4 viewMatrix, Mat4 projMatrix, Mat4 lightViewMatrix, Mat4 lightProjectionMatrix ) {
+		glCullFace(GL_BACK);
 		shaderProgram.useProgram();
 		shaderProgram.setUniform( "uModel",      modelMatrix );
 		shaderProgram.setUniform( "uView",       viewMatrix );  
@@ -158,52 +173,24 @@ public class Sandbox {
 
         shaderProgram.setUniform("uInvertedUView",      new Mat4(viewMatrix).inverse() );
         shaderProgram.setUniform("uNormalMat", createNormalMat(modelMatrix));
+
         shaderProgram.setUniform("uLightPosArray", lightPositions);
         shaderProgram.setUniform("uLightColorArray", lightColors);
         shaderProgram.setUniform("uLightRange", lightRanges);
 
-		shaderProgram.setUniformShadowTexture("uShadowmap", shadowTextureID);
+		Texture texture = new Texture(shadowTextureID);
+		shaderProgram.setUniform("uShadowmap", texture);
 
 		for( Model model : models ) {
-       //     shaderProgram.setUniform("uTexture",model.getModelTexture().getTexture());
+            shaderProgram.setUniform("uTexture",model.getModelTexture().getTexture());
             shaderProgram.setUniform("uShininess", model.getModelTexture().getShininess());
             shaderProgram.setUniform("uReflectivity", model.getModelTexture().getReflectivity());
-
 
             model.getMesh().draw(GL_TRIANGLES );
 		}
 	}
 
-	private void renderShadowMap() {
-	//	glBindTexture(GL_TEXTURE_2D, 0);//To make sure the texture is not bound
-	//	glBindFramebuffer( GL_FRAMEBUFFER, 0);
-		glBindFramebuffer( GL_FRAMEBUFFER, shadowFrameBuffer);
-
-		glViewport( 0, 0, 1024, 1024 );
-		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT|GL11.GL_DEPTH_BUFFER_BIT);
-	//	GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
-
-
-
-		lightProjectionMatrix = Mat4.perspective(90, windowWidth, windowHeight, 0.01f, 500.0f);
-//		lightProjectionMatrix = Mat4.orthographic(5,5,5,5,0.01f,500f);
-		lights.get(0).increaseRotation(0,0.2f,0);
-		createLightArrays(lights);
-
-
-
-		lightViewMatrix = Mat4.lookAt(lightPositions[0], new Vec3(), new Vec3(0, 1, 0));
-
-		//render shadow scene
-		drawMeshesShadow();
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT|GL11.GL_DEPTH_BUFFER_BIT);
-		GL11.glClearColor(0, 0, 0, 1);
-		glViewport( 0, 0, windowWidth, windowHeight );
-	}
-
-	public void drawMeshesShadow ( ) {
+	public void drawMeshesShadow ( Mat4 lightViewMatrix, Mat4 lightProjectionMatrix ) {
 		glCullFace(GL_BACK);
 		shaderProgramShadow.useProgram();
 		shaderProgramShadow.setUniform( "uModel",      modelMatrix );
@@ -220,33 +207,23 @@ public class Sandbox {
 
 		// Create Texture
 		shadowTextureID = glGenTextures();
-		glBindTexture( GL_TEXTURE_2D, shadowTextureID );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glBindTexture(GL_TEXTURE_2D, shadowTextureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, shadowMapSize, shadowMapSize,
+				0, GL_DEPTH_COMPONENT, GL_FLOAT, (FloatBuffer) null);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-		glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowMapSize, shadowMapSize,
-				0, GL_DEPTH_COMPONENT, GL_FLOAT, (ByteBuffer)null );
-		glBindTexture( GL_TEXTURE_2D, 0 );
+		glBindTexture(GL_TEXTURE_2D, 0);
 
 		//Create Framebuffer
 		shadowFrameBuffer = glGenFramebuffers();
-		glBindFramebuffer( GL_FRAMEBUFFER, shadowFrameBuffer );
-
-		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-				GL_TEXTURE_2D, shadowTextureID, 0 );
-
+		glBindFramebuffer(GL_FRAMEBUFFER, shadowFrameBuffer);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowTextureID, 0);
 		glReadBuffer(GL_NONE);
 		glDrawBuffer(GL_NONE);
-
-		depthrenderbuffer = glGenRenderbuffers();
-		glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, shadowMapSize, shadowMapSize);
-
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-				GL_RENDERBUFFER, depthrenderbuffer);
 
 		int err = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 		if( err != GL_FRAMEBUFFER_COMPLETE) {
@@ -254,8 +231,7 @@ public class Sandbox {
 			System.exit(-1);
 		}
 
-		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
 	private void createMeshes() {
@@ -310,8 +286,7 @@ public class Sandbox {
 		}
 	}
 	
-	public void onResize( int width, int height )
-	{
+	public void onResize( int width, int height ) {
 		windowWidth  = width;
 		windowHeight = height;
 	}

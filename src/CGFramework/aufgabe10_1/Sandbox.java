@@ -121,7 +121,6 @@ public class Sandbox {
 	
 	public void draw() {
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-		float fov    = 60.0f;
 		float near   = 0.01f;
 		float far    = 500.0f;
 		float lightFov    = 90.0f;
@@ -130,7 +129,7 @@ public class Sandbox {
 		glViewport( 0, 0, windowWidth, windowHeight );
 		lights.get(0).increaseRotation(0,0.2f,0);
 		createLightArrays(lights);
-		this.drawMeshesShadow( Mat4.lookAt(lightPositions[0], new Vec3(), new Vec3(0,1,0)), lightProjectionMatrix );
+		this.drawMeshes( Mat4.lookAt(lightPositions[0], new Vec3(), new Vec3(0,1,0)), lightProjectionMatrix );
 	}	
 	
 	public void drawMeshes( Mat4 viewMatrix, Mat4 projMatrix ) {
@@ -152,35 +151,9 @@ public class Sandbox {
             model.getMesh().draw(GL_TRIANGLES );
 		}
 	}
-
-	public void drawMeshesShadow ( Mat4 viewMatrix, Mat4 projMatrix ) {
-		shaderProgram.useProgram();
-		shaderProgram.setUniform( "uModel",      modelMatrix );
-		shaderProgram.setUniform( "uView",       viewMatrix );
-		shaderProgram.setUniform( "uProjection", projMatrix );
-
-		shaderProgram.setUniform("uInvertedUView",      new Mat4(viewMatrix).inverse() );
-		shaderProgram.setUniform("uNormalMat", createNormalMat(modelMatrix));
-		shaderProgram.setUniform("uLightPosArray", lightPositions);
-		shaderProgram.setUniform("uLightColorArray", lightColors);
-		shaderProgram.setUniform("uLightRange", lightRanges);
-
-		for( Model model : models ) {
-			//     shaderProgram.setUniform("uTexture",model.getModelTexture().getTexture());
-			shaderProgram.setUniform("uShininess", model.getModelTexture().getShininess());
-			shaderProgram.setUniform("uReflectivity", model.getModelTexture().getReflectivity());
-			model.getMesh().draw(GL_TRIANGLES );
-		}
-	}
 	
 	protected void createMeshes() {
 		loadObj("Meshes/monkey_scene.obj");
-		
-		/*
-		 * LoadOBJ-Example
-		 * loadObj("Meshes/monkey.obj");
-		 */
-		
 	}
 
 	 protected void createTextures() {

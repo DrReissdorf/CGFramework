@@ -48,16 +48,6 @@ public class Light {
         this.range = range;
     }
 
-    public void increaseRotation(float dx, float dy, float dz) {
-        this.rotX += dx;
-        this.rotY += dy;
-        this.rotZ += dz;
-
-        if(rotX > 360) rotX -= 360;
-        if(rotY > 360) rotY -= 360;
-        if(rotZ > 360) rotZ -= 360;
-    }
-
     public float getRotX() {
         return rotX;
     }
