@@ -130,8 +130,9 @@ public class Sandbox {
 		float far       = 500.0f;
 		float lightFov  = 90f;
 
-		lightList.get(0).moveAroundCenter();
+		//lightList.get(0).moveAroundCenter();
         createLightArrays(lightList);
+
 		//SET UP VIEW AND PROJECTION MATRICES
 		Mat4 projectionMatrix = Mat4.perspective( fov, windowWidth, windowHeight, near, far );
 		Mat4 lightProjectionMatrix = Mat4.perspective(lightFov, shadowMapSize, shadowMapSize, 0.1f, lightList.get(0).getRange());
@@ -186,6 +187,7 @@ public class Sandbox {
 	public void drawMeshesShadow ( Mat4 lightViewMatrix, Mat4 lightProjectionMatrix ) {
 		glCullFace(GL_BACK);
 		shaderProgramShadow.useProgram();
+		shaderProgramShadow.setUniform("uModel", modelMatrix);
 		shaderProgramShadow.setUniform( "uView",       lightViewMatrix );
 		shaderProgramShadow.setUniform( "uProjection", lightProjectionMatrix );
 

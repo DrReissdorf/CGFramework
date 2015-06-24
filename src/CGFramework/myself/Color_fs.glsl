@@ -60,8 +60,8 @@ float getAttenuationPCF( vec4 shadowmapCoord ) {
 
     float shadowmap_factor = 0.0;
     float numberOfSamples = 0;
-    for (int y = -2 ; y <= 2 ; y++) {
-        for (int x = -2 ; x <= 2 ; x++) {
+    for (int y = -1 ; y <= 1 ; y++) {
+        for (int x = -1 ; x <= 1 ; x++) {
 
             //calculate offstes with size of texels
             vec2 Offsets = vec2(x * xOffset, y * yOffset);

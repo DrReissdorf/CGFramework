@@ -46,7 +46,7 @@ void main(void) {
     vTextureCoords = textureCoords;
 
     // VertexPosition aus Sicht der Lichtquelle
-    vShadow = uLightProjection * uLightView * vec4(aPosition,1.0);
+    vShadow = uLightProjection * uLightView * uModel * vec4(aPosition,1.0);
 
     vec4 worldPosition = uModel * vec4(aPosition,1.0);
 
@@ -57,7 +57,7 @@ void main(void) {
     vec3 lightWorldPosition;
     int i;
     for(i=0 ; i<L.length() ; i++) {
-        lightWorldPosition = mat3(uModel) * uLightPosArray[i];
+        lightWorldPosition =  uLightPosArray[i];
         L[i] = normalize(lightWorldPosition - worldPosition.xyz);
         attenuationArray[i] = attenuationOfLight(worldPosition.xyz, lightWorldPosition, 0 , uLightRange[i] );
     }
