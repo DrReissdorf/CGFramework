@@ -40,12 +40,40 @@ vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl
     return specular;
 }
 
-float getAttenuation( vec4 shadowmapCoord ) {
-    vec3 coord3 = 0.5 + 0.5 * vShadow.xyz / vShadow.w;
-    coord3.z -= SHADOW_BIAS;
-    float shadowmap_factor = texture(uShadowmap, coord3);
-    return shadowmap_factor;
+float getAttenuationPCF( vec4 shadowmapCoord ) {
+    vec3 ProjCoords = shadowmapCoord.xyz / shadowmapCoord.w;
+    vec2 UVCoords;
+    UVCoords.x = 0.5 * ProjCoords.x + 0.5;
+    UVCoords.y = 0.5 * ProjCoords.y + 0.5;
+    float z = 0.5 * ProjCoords.z + 0.5;
+
+    /************ get texturesize *************/
+    ivec2 texSize = textureSize(uShadowmap,0);
+    float xOffset = 1.0/float(texSize.x);
+    float yOffset = 1.0/float(texSize.y);
+    /******************************************/
+
+    float shadowmap_factor = 0.0;
+    float numberOfSamples = 0;
+    for (int y = -2 ; y <= 2 ; y++) {
+        for (int x = -2 ; x <= 2 ; x++) {
+
+            //calculate offstes with size of texels
+            vec2 Offsets = vec2(x * xOffset, y * yOffset);
+
+            //add offsets to coordinates
+            vec3 UVC = vec3(UVCoords + Offsets, z - SHADOW_BIAS);
+
+            // add combined values to factor
+            shadowmap_factor += texture(uShadowmap, UVC);
+            numberOfSamples++;
+        }
+    }
+
+    // divide factor by numberOfSamples and return it
+    return shadowmap_factor/numberOfSamples;
 }
+
 
 void main(void) {
     float ambilight = 0.1;
@@ -70,7 +98,7 @@ void main(void) {
     specularFinal = max(specularFinal,0);
     /*************************************************************************/
 
-    float shadowFactor = getAttenuation(vShadow);
+    float shadowFactor = getAttenuationPCF(vShadow);
 
     FragColor =  ambilight + ( vec4(diffuseFinal, 1.0) + vec4(specularFinal, 1.0) )*shadowFactor;
 }
