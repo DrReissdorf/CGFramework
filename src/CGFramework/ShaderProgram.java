@@ -23,7 +23,6 @@ public class ShaderProgram {
     private HashMap<String, Integer> m_UniformLocations;
     private int                      m_Program;
 
-
     public ShaderProgram( String vertexFile, String fragmentFile )
     {
         m_UniformLocations = new HashMap<String, Integer>();
@@ -217,6 +216,37 @@ public class ShaderProgram {
         fb.put(temp);
         fb.flip();
         glUniform4(this.getUniformLocation(uniformName), fb);
+    }
+
+    public void setUniform( String uniformName, Mat4[] matArray ) {
+        FloatBuffer fb = BufferUtils.createFloatBuffer(matArray.length*16);
+        float[] temp = new float[matArray.length*16];
+
+        for(int i=0 ; i<matArray.length ; i++) {
+            temp[i*3] = matArray[i].m00;
+            temp[i*3+1] = matArray[i].m01;
+            temp[i*3+2] = matArray[i].m02;
+            temp[i*3+3] = matArray[i].m03;
+
+            temp[i*3+4] = matArray[i].m10;
+            temp[i*3+5] = matArray[i].m11;
+            temp[i*3+6] = matArray[i].m12;
+            temp[i*3+7] = matArray[i].m13;
+
+            temp[i*3+8] = matArray[i].m20;
+            temp[i*3+9] = matArray[i].m21;
+            temp[i*3+10] = matArray[i].m22;
+            temp[i*3+11] = matArray[i].m23;
+
+            temp[i*3+12] = matArray[i].m30;
+            temp[i*3+13] = matArray[i].m31;
+            temp[i*3+14] = matArray[i].m32;
+            temp[i*3+15] = matArray[i].m33;
+        }
+
+        fb.put(temp);
+        fb.flip();
+        glUniformMatrix4(this.getUniformLocation(uniformName), false, fb);
     }
 
     public void setUniform( String uniformName, float[] floats ) {

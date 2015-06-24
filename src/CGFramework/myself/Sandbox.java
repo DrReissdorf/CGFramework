@@ -88,40 +88,7 @@ public class Sandbox {
 	 * @param deltaTime The time in seconds between the last two frames
 	 */
 	public void update( float deltaTime ) {
-		if( Key.justReleased(Keyboard.KEY_ESCAPE) )
-			Main.exit();
-		
-		if( Key.justPressed(Keyboard.KEY_F) )
-			Main.toggleFullscreen();
-		
-		float cameraSpeed = 5.0f * deltaTime;
-		
-		if( Key.isPressed(Keyboard.KEY_W) )
-			viewMatrix.mul( Mat4.translation(0.0f, 0.0f, cameraSpeed) );
-		
-		if( Key.isPressed(Keyboard.KEY_S) )
-			viewMatrix.mul( Mat4.translation(0.0f, 0.0f, -cameraSpeed) );
-
-		if( Key.isPressed(Keyboard.KEY_A) )
-			viewMatrix.mul( Mat4.translation(cameraSpeed, 0.0f, 0.0f) );
-
-		if( Key.isPressed(Keyboard.KEY_D) )
-			viewMatrix.mul( Mat4.translation(-cameraSpeed, 0.0f, 0.0f) );
-
-		if( Key.isPressed(Keyboard.KEY_SPACE) )
-			viewMatrix.mul( Mat4.translation(0.0f, -cameraSpeed, 0.0f) );
-
-		if( Key.isPressed(Keyboard.KEY_LSHIFT) )
-			viewMatrix.mul( Mat4.translation(0.0f, cameraSpeed, 0.0f) );
-		
-		if( Mouse.isButtonDown(0) ) {
-			float rotationScale = 0.01f;
-			float deltaX = (float) Mouse.getDX();
-			float deltaY = (float) Mouse.getDY();
-			Mat4 rotationX = Mat4.rotation( Vec3.yAxis(),  deltaX * rotationScale );
-			Mat4 rotationY = Mat4.rotation( Vec3.xAxis(), -deltaY * rotationScale );
-			modelMatrix = rotationY.mul( rotationX ).mul( modelMatrix );
-		}
+		inputListener(deltaTime);
 	}
 	
 	public void draw() {
@@ -217,7 +184,7 @@ public class Sandbox {
     }
 
 	private void createLights() {
-		lightList.add(new Light(new Vec3(3, 3, 3), new Vec3(1, 1, 1), 15f, 0.03f));
+		lightList.add(new Light(new Vec3(3, 3, 3), new Vec3(1, 1, 1), 50f, 0.03f));
     }
 
 	private void createLightArrays(List<Light> lightList) {
@@ -245,8 +212,7 @@ public class Sandbox {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
 		//Create floatbuffer to represent whitecolor for border_color
-		float[] whiteColor = {1,1,1,1};
-		glTexParameter(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, createFloatBuffer(whiteColor));
+		glTexParameter(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, createFloatBuffer(new float[]{1,1,1,1}));
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -307,6 +273,43 @@ public class Sandbox {
     private Mat4 createNormalMat(Mat4 modelMatrix) {
         return Mat4.inverse(modelMatrix).transpose();
     }
+
+	private void inputListener(float deltaTime) {
+		if( Key.justReleased(Keyboard.KEY_ESCAPE) )
+			Main.exit();
+
+		if( Key.justPressed(Keyboard.KEY_F) )
+			Main.toggleFullscreen();
+
+		float cameraSpeed = 5.0f * deltaTime;
+
+		if( Key.isPressed(Keyboard.KEY_W) )
+			viewMatrix.mul( Mat4.translation(0.0f, 0.0f, cameraSpeed) );
+
+		if( Key.isPressed(Keyboard.KEY_S) )
+			viewMatrix.mul( Mat4.translation(0.0f, 0.0f, -cameraSpeed) );
+
+		if( Key.isPressed(Keyboard.KEY_A) )
+			viewMatrix.mul( Mat4.translation(cameraSpeed, 0.0f, 0.0f) );
+
+		if( Key.isPressed(Keyboard.KEY_D) )
+			viewMatrix.mul( Mat4.translation(-cameraSpeed, 0.0f, 0.0f) );
+
+		if( Key.isPressed(Keyboard.KEY_SPACE) )
+			viewMatrix.mul( Mat4.translation(0.0f, -cameraSpeed, 0.0f) );
+
+		if( Key.isPressed(Keyboard.KEY_LSHIFT) )
+			viewMatrix.mul( Mat4.translation(0.0f, cameraSpeed, 0.0f) );
+
+		if( Mouse.isButtonDown(0) ) {
+			float rotationScale = 0.01f;
+			float deltaX = (float) Mouse.getDX();
+			float deltaY = (float) Mouse.getDY();
+			Mat4 rotationX = Mat4.rotation( Vec3.yAxis(),  deltaX * rotationScale );
+			Mat4 rotationY = Mat4.rotation( Vec3.xAxis(), -deltaY * rotationScale );
+			modelMatrix = rotationY.mul( rotationX ).mul( modelMatrix );
+		}
+	}
 
     /**
      * @return The path to directory where the source file of this class is located.
