@@ -97,7 +97,7 @@ public class Sandbox {
 		float far       = 500.0f;
 		float lightFov  = 90f;
 
-		//lightList.get(0).moveAroundCenter();
+		lightList.get(0).moveAroundCenter();
         createLightArrays(lightList);
 
 		//SET UP VIEW AND PROJECTION MATRICES
@@ -115,7 +115,6 @@ public class Sandbox {
 	public void drawMeshes( Mat4 viewMatrix, Mat4 projMatrix, Mat4 lightViewMatrix, Mat4 lightProjectionMatrix ) {
 		glCullFace(GL_BACK);
 		shaderProgram.useProgram();
-        shaderProgram.setUniform( "uModel", modelMatrix);
 		shaderProgram.setUniform( "uView",       viewMatrix );  
 		shaderProgram.setUniform( "uProjection", projMatrix );
 
@@ -132,6 +131,7 @@ public class Sandbox {
 		shaderProgram.setUniform("uShadowmap", shadowMapTexture);
 
 		for( Entity entity : entityList) {
+			shaderProgram.setUniform( "uModel", Transformation.createTransMat(modelMatrix, entity.getPosition(),1f));
 			shaderProgram.setUniform("uTexture", entity.getModel().getModelTexture().getTexture());
             shaderProgram.setUniform("uShininess", entity.getModel().getModelTexture().getShininess());
             shaderProgram.setUniform("uReflectivity", entity.getModel().getModelTexture().getReflectivity());
@@ -154,11 +154,11 @@ public class Sandbox {
 	public void drawMeshesShadow ( Mat4 lightViewMatrix, Mat4 lightProjectionMatrix ) {
 		glCullFace(GL_BACK);
 		shaderProgramShadow.useProgram();
-		shaderProgramShadow.setUniform("uModel", modelMatrix);
 		shaderProgramShadow.setUniform( "uView",       lightViewMatrix );
 		shaderProgramShadow.setUniform( "uProjection", lightProjectionMatrix );
 
 		for( Entity entity : entityList) {
+			shaderProgramShadow.setUniform( "uModel", Transformation.createTransMat(modelMatrix, entity.getPosition(),1f));
 			entity.getModel().getMesh().draw(GL_TRIANGLES );
 		}
 	}
@@ -180,7 +180,7 @@ public class Sandbox {
 
     private void createEntities() {
         entityList.add(new Entity(modelList.get(0), new Vec3(1,0,0)));
-      //  entityList.add(new Entity(modelList.get(1), new Vec3(-2,0,-2)));
+        entityList.add(new Entity(modelList.get(1), new Vec3(-1,0,-1)));
     }
 
 	private void createLights() {
