@@ -1,12 +1,12 @@
 package CGFramework.aufgabe10_2;
-/* 
+/*
  * Cologne University of Applied Sciences
  * Institute for Media and Imaging Technologies - Computer Graphics Group
  *
  * Copyright (c) 2014 Cologne University of Applied Sciences. All rights reserved.
  *
  * This source code is property of the Cologne University of Applied Sciences. Any redistribution
- * and use in source and binary forms, with or without modification, requires explicit permission. 
+ * and use in source and binary forms, with or without modification, requires explicit permission.
  */
 
 import CGFramework.Light;
@@ -193,6 +193,35 @@ public class Sandbox {
 		}
 	}
 
+	private void createMeshes() {
+		loadObj("Meshes/monkey_scene.obj");
+	}
+
+	private void createTextures() {
+		modelTextures.add(new ModelTexture(new Texture("Textures/dragon.png"), 1f, 32));
+	}
+
+	private void createModels() {
+        models.add(new Model(meshes.get(0), modelTextures.get(0)));
+    }
+
+	private void createLights() {
+		lights.add( new Light(new Vec3(3,3,3), new Vec3(1,1,1),15f,0.03f));
+    }
+
+	private void createLightArrays(List<Light> lightList) {
+		lightPositions = new Vec3[lightList.size()];
+		lightColors = new Vec3[lightList.size()];
+		lightRanges = new float[lightList.size()];
+
+		for(int i=0 ; i<lightList.size() ; i++) {
+			lightPositions[i] = lights.get(i).getPosition();
+			lightColors[i]      = lights.get(i).getColor();
+			lightRanges[i]      = lights.get(i).getRange();
+		}
+
+	}
+
 	private void setupShadowMap( int shadowMapSize ) {
 		shaderProgramShadow = new CGFramework.ShaderProgram( getPathForPackage() + "Shadowmap_vs.glsl", getPathForPackage() + "Shadowmap_fs.glsl" );
 
@@ -204,11 +233,11 @@ public class Sandbox {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
-        //Create floatbuffer to represent whitecolor for border_color
-        float[] whiteColor = {1,1,1,1};
-        glTexParameter(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, createFloatBuffer(whiteColor));
+		//Create floatbuffer to represent whitecolor for border_color
+		float[] whiteColor = {1,1,1,1};
+		glTexParameter(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, createFloatBuffer(whiteColor));
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
@@ -230,35 +259,6 @@ public class Sandbox {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	private void createMeshes() {
-		loadObj("Meshes/monkey_scene.obj");
-	}
-
-	private void createTextures() {
-		modelTextures.add(new ModelTexture(new Texture("Textures/dragon.png"), 1f, 32));
-	}
-
-	private void createModels() {
-        models.add(new Model(meshes.get(0), modelTextures.get(0)));
-    }
-
-	private void createLights() {
-		lights.add( new Light(new Vec3(3,3,3), new Vec3(1,1,1),10f,0.03f));
-    }
-
-	private void createLightArrays(List<Light> lightList) {
-		lightPositions = new Vec3[lightList.size()];
-		lightColors = new Vec3[lightList.size()];
-		lightRanges = new float[lightList.size()];
-
-		for(int i=0 ; i<lightList.size() ; i++) {
-			lightPositions[i] = lights.get(i).getPosition();
-			lightColors[i]      = lights.get(i).getColor();
-			lightRanges[i]      = lights.get(i).getRange();
-		}
-
-	}
-	
 	private void loadObj( String filename )
 	{
 		OBJContainer        objContainer = OBJContainer.loadFile( filename );

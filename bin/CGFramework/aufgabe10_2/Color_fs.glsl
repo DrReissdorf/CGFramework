@@ -4,6 +4,7 @@
 
 in vec3 N;
 in vec3 V;
+uniform mat4 uModel;
 
 /*** LIGHTS ***/
 in vec3[LIGHTS] L;
@@ -39,7 +40,7 @@ vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl
 }
 
 float getAttenuation( vec4 shadowmapCoord ) {
-    float shadow_bias = 0.0002;
+    float shadow_bias = 0.0004;
     vec3 coord3 = 0.5 + 0.5 * vShadow.xyz / vShadow.w;
     coord3.z -= shadow_bias;
     float shadowmap_factor = texture(uShadowmap, coord3);
@@ -47,8 +48,33 @@ float getAttenuation( vec4 shadowmapCoord ) {
 }
 
 float getAttenuationPCF( vec4 shadowmapCoord ) {
-    float lol = 0;
-    return lol;
+    float shadow_bias = 0.0004;
+
+    vec3 ProjCoords = shadowmapCoord.xyz / shadowmapCoord.w;
+    vec2 UVCoords;
+    UVCoords.x = 0.5 * ProjCoords.x + 0.5;
+    UVCoords.y = 0.5 * ProjCoords.y + 0.5;
+    float z = 0.5 * ProjCoords.z + 0.5;
+
+    ivec2 texSize = textureSize(uShadowmap,0);
+    float xOffset = 1.0/float(texSize.x);
+    float yOffset = 1.0/float(texSize.y);
+
+    float shadowmap_factor = 0.0;
+    float numberOfSamples = 0;
+
+    for (int y = -2 ; y <= 2 ; y++) {
+        for (int x = -2 ; x <= 2 ; x++) {
+            vec2 Offsets = vec2(x * xOffset, y * yOffset);
+            vec3 UVC = vec3(UVCoords + Offsets, z - shadow_bias);
+
+            shadowmap_factor += texture(uShadowmap, UVC);
+            numberOfSamples++;
+        }
+    }
+
+
+    return shadowmap_factor/numberOfSamples;
 }
 
 void main(void) {
@@ -72,12 +98,6 @@ void main(void) {
     diffuseFinal = max(diffuseFinal,0);
     specularFinal = max(specularFinal,0);
 
-
-  //  vec4 textureColor = texture(uTexture,vTextureCoords);
-
-    FragColor =  ambilight + (vec4(diffuseFinal, 1.0) * getAttenuation(vShadow)) + vec4(specularFinal, 1.0);
-
-   // FragColor = vec4(shadowmap_factor,shadowmap_factor,shadowmap_factor,1.0);
- //   FragColor = vec4(diffuseFinal, 1.0) * textureColor + vec4(specularFinal, 1.0);
-
+    float shadow = getAttenuationPCF(vShadow);
+    FragColor =  ambilight + vec4(diffuseFinal, 1.0)*shadow + vec4(specularFinal, 1.0)*shadow;
 }

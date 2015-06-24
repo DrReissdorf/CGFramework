@@ -87,5 +87,7 @@ public class Light {
         position.z = 0 + (float)Math.cos(circleMoveAngle) * distanceToOrigin;
 
         circleMoveAngle += circleMoveSpeed;
+
+        if(circleMoveAngle >= 360) circleMoveAngle -= 360;
     }
 }

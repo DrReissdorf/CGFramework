@@ -11,6 +11,7 @@ uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProjection;
 uniform mat4 uInvertedUView;
+uniform mat4 uNormalMat;
 
 out vec3 uPosition;
 out vec3 N;
@@ -49,16 +50,15 @@ void main(void) {
 
     vec4 worldPosition = uModel * vec4(aPosition,1.0);
 
-    N = normalize( aNormal );
+    N = normalize( mat3(uNormalMat) * aNormal );
     V = normalize( (uInvertedUView * vec4(0.0,0.0,0.0,1.0)).xyz - worldPosition.xyz );
 
     float lightEndDist;
     vec3 lightWorldPosition;
     int i;
     for(i=0 ; i<L.length() ; i++) {
-        lightWorldPosition = uLightPosArray[i];
+        lightWorldPosition = mat3(uModel) * uLightPosArray[i];
         L[i] = normalize(lightWorldPosition - worldPosition.xyz);
-        lightEndDist = uLightRange[i];
         attenuationArray[i] = attenuationOfLight(worldPosition.xyz, lightWorldPosition, 0 , uLightRange[i] );
     }
 
