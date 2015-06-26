@@ -147,7 +147,7 @@ public class Sandbox {
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT|GL11.GL_DEPTH_BUFFER_BIT);
-		GL11.glClearColor(0, 0, 0, 1);
+		GL11.glClearColor(0.5f, 0.7f, 1, 1);
 		glViewport( 0, 0, windowWidth, windowHeight );
 	}
 
@@ -184,7 +184,7 @@ public class Sandbox {
     }
 
 	private void createLights() {
-		lightList.add(new Light(new Vec3(3, 3, 3), new Vec3(1, 1, 1), 50f, 0.03f));
+		lightList.add(new Light(new Vec3(3, 3, 3), new Vec3(1, 1, 1), 50f, 0.01f));
     }
 
 	private void createLightArrays(List<Light> lightList) {

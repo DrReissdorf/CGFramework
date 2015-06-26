@@ -3,6 +3,7 @@
 #define LIGHTS 1
 #define BLINN_ADD_SHINE 100
 #define SHADOW_BIAS 0.0004
+#define AMBILIGHT 0.1
 
 in vec3 N;
 in vec3 V;
@@ -35,9 +36,9 @@ vec3 calculateDiffuse(vec3 N, vec3 L, vec3 lightColor, float nDotl) {
     return diffuseLighting;
 }
 
-vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl, float ambilight) {
+vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl) {
     vec3 specular = vec3(0,0,0);
-    if(nDotl > ambilight) {
+    if(nDotl > AMBILIGHT) {
         vec3 lightAddCam = L+V;
         vec3 H = normalize( lightAddCam/sqrt(dot(lightAddCam,lightAddCam)) );
         specular =  lightColor * uReflectivity * vec3(max(pow(dot(N, H), uShininess+BLINN_ADD_SHINE), 0.0));
@@ -81,7 +82,6 @@ float getAttenuationPCF( vec4 shadowmapCoord ) {
 
 
 void main(void) {
-    float ambilight = 0.1;
     float lightStartDist = 0;
 
     /************** DIFFUSE AND SPECULAR CALCULATION ************************/
@@ -94,7 +94,7 @@ void main(void) {
         float lightIntense = attenuationArray[i];
 
         vec3 diffuse = calculateDiffuse(N, L[i], uLightColorArray[i],nDotl);
-        vec3 specular = calculateSpecularBlinn(N, V, L[i], uLightColorArray[i], nDotl, ambilight);
+        vec3 specular = calculateSpecularBlinn(N, V, L[i], uLightColorArray[i], nDotl);
 
         diffuseFinal += diffuse*lightIntense;
         specularFinal += specular*lightIntense;
@@ -106,5 +106,6 @@ void main(void) {
     vec4 textureColor = texture(uTexture,vTextureCoords);
     float shadowFactor = getAttenuationPCF(vShadow);
 
-    FragColor =  ambilight + ( vec4(diffuseFinal, 1.0) + vec4(specularFinal, 1.0) ) * textureColor * shadowFactor;
+    FragColor = AMBILIGHT + vec4(diffuseFinal, 1.0)*textureColor*(shadowFactor+AMBILIGHT*2) + vec4(specularFinal, 1.0)*shadowFactor;
+ //   FragColor =  AMBILIGHT+ textureColor*shadowFactor ;
 }
