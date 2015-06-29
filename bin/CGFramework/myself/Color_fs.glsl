@@ -3,7 +3,7 @@
 #define LIGHTS 1
 #define BLINN_ADD_SHINE 100
 #define SHADOW_BIAS 0.0004
-#define AMBILIGHT 0.2
+#define AMBILIGHT 0.15
 
 in vec3 N;
 in vec3 V;
@@ -106,6 +106,5 @@ void main(void) {
     vec4 textureColor = texture(uTexture,vTextureCoords);
     float shadowFactor = getAttenuationPCF(vShadow);
 
-    FragColor = AMBILIGHT + vec4(diffuseFinal, 1.0)*textureColor*(shadowFactor+AMBILIGHT) + vec4(specularFinal, 1.0)*shadowFactor;
- //   FragColor =  AMBILIGHT+ textureColor*shadowFactor ;
+    FragColor = AMBILIGHT + vec4(diffuseFinal, 1.0)*textureColor*(shadowFactor+AMBILIGHT*2) + vec4(specularFinal, 1.0)*shadowFactor;
 }

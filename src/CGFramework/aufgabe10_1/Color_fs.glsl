@@ -1,17 +1,15 @@
 #version 150
 
-#define LIGHTS 1
-
 in vec3 uPosition;
 in vec3 N;
 in vec3 V;
 
 /*** LIGHTS ***/
-in vec3[LIGHTS] L;
-in float[LIGHTS] attenuationArray;
-uniform vec3[LIGHTS] uLightPosArray;
-uniform vec3[LIGHTS] uLightColorArray;
-uniform float[LIGHTS] uLightRange;
+in vec3 L;
+in float attenuation;
+uniform vec3 uLightPos;
+uniform vec3 uLightColor;
+uniform float uLightRange;
 uniform float uShininess;
 uniform float uReflectivity;
 
@@ -43,26 +41,14 @@ void main(void) {
     float ambilight = 0.05;
     float lightStartDist = 0;
 
-    vec3 diffuseFinal = vec3(0,0,0);
-    vec3 specularFinal = vec3(0,0,0);
+    float nDotl = dot(N,L);
+    float lightIntense = attenuation;
 
-    int i;
-    for(i=0 ; i<L.length() ; i++) {
-        float nDotl = dot(N,L[i]);
-        float lightEndDist = uLightRange[i];
-        float lightIntense = attenuationArray[i];
+    vec3 diffuse = calculateDiffuse(N, L, uLightColor,nDotl);
+    vec3 specular = calculateSpecularBlinn(N, V, L, uLightColor, nDotl, ambilight);
 
-        vec3 diffuse = calculateDiffuse(N, L[i], uLightColorArray[i],nDotl);
-        vec3 specular = calculateSpecularBlinn(N, V, L[i], uLightColorArray[i], nDotl, ambilight);
+    vec3 diffuseFinal = max(diffuse*lightIntense,0);
+    vec3 specularFinal = max(specular*lightIntense,0);
 
-        diffuseFinal += diffuse*lightIntense;
-        specularFinal += specular*lightIntense;
-    }
-    diffuseFinal = max(diffuseFinal,ambilight);
-    specularFinal = max(specularFinal,ambilight);
-
-    vec4 textureColor = texture(uTexture,vTextureCoords);
     FragColor = vec4(diffuseFinal, 1.0);
- //   FragColor = vec4(diffuseFinal, 1.0) * textureColor + vec4(specularFinal, 1.0);
-
 }

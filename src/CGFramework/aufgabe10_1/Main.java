@@ -9,8 +9,6 @@ package CGFramework.aufgabe10_1;
  * and use in source and binary forms, with or without modification, requires explicit permission. 
  */
 
-import CGFramework.aufgabe91.*;
-import CGFramework.aufgabe91.Sandbox;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.LWJGLUtil;
 import org.lwjgl.opengl.ContextAttribs;

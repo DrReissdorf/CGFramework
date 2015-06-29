@@ -31,8 +31,8 @@ import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
 
 public class Sandbox {
-	private CGFramework.ShaderProgram shaderProgram;
-	private CGFramework.ShaderProgram shaderProgramShadow;
+	private CGFramework.MyShaderProgram myShaderProgram;
+	private CGFramework.MyShaderProgram myShaderProgramShadow;
     private ArrayList<Light> lightList = new ArrayList<>();
 	private ArrayList<Mesh> meshes = new ArrayList<>();
     private ArrayList<Model> modelList = new ArrayList<>();
@@ -63,7 +63,7 @@ public class Sandbox {
 		// The shader program source files must be put into the same package as the Sandbox class file. This simplifies the 
         // handling in the lab exercise (i.e. for when uploading to Ilias or when correcting) since all code of one student
         // is kept in one package. In productive code the shaders would be put into the 'resource' directory.
-        shaderProgram = new CGFramework.ShaderProgram( getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl" );
+        myShaderProgram = new CGFramework.MyShaderProgram( getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl" );
 
 		modelMatrix   = new Mat4();
 		viewMatrix    = Mat4.translation( 0.0f, 0.0f, -3.0f );
@@ -114,27 +114,27 @@ public class Sandbox {
 	
 	public void drawMeshes( Mat4 viewMatrix, Mat4 projMatrix, Mat4 lightViewMatrix, Mat4 lightProjectionMatrix ) {
 		glCullFace(GL_BACK);
-		shaderProgram.useProgram();
-		shaderProgram.setUniform( "uView",       viewMatrix );  
-		shaderProgram.setUniform( "uProjection", projMatrix );
+		myShaderProgram.useProgram();
+		myShaderProgram.setUniform( "uView",       viewMatrix );
+		myShaderProgram.setUniform( "uProjection", projMatrix );
 
-		shaderProgram.setUniform( "uLightProjection", lightProjectionMatrix );
-		shaderProgram.setUniform( "uLightView", lightViewMatrix );
+		myShaderProgram.setUniform( "uLightProjection", lightProjectionMatrix );
+		myShaderProgram.setUniform( "uLightView", lightViewMatrix );
 
-        shaderProgram.setUniform("uInvertedUView",      new Mat4(viewMatrix).inverse() );
-        shaderProgram.setUniform("uNormalMat", createNormalMat(modelMatrix));
+        myShaderProgram.setUniform("uInvertedUView",      new Mat4(viewMatrix).inverse() );
+        myShaderProgram.setUniform("uNormalMat", createNormalMat(modelMatrix));
 
-        shaderProgram.setUniform("uLightPosArray", lightPositions);
-        shaderProgram.setUniform("uLightColorArray", lightColors);
-        shaderProgram.setUniform("uLightRange", lightRanges);
+        myShaderProgram.setUniform("uLightPosArray", lightPositions);
+        myShaderProgram.setUniform("uLightColorArray", lightColors);
+        myShaderProgram.setUniform("uLightRange", lightRanges);
 
-		shaderProgram.setUniform("uShadowmap", shadowMapTexture);
+		myShaderProgram.setUniform("uShadowmap", shadowMapTexture);
 
 		for( Entity entity : entityList) {
-			shaderProgram.setUniform( "uModel", Transformation.createTransMat(modelMatrix, entity.getPosition(),1f));
-			shaderProgram.setUniform("uTexture", entity.getModel().getModelTexture().getTexture());
-            shaderProgram.setUniform("uShininess", entity.getModel().getModelTexture().getShininess());
-            shaderProgram.setUniform("uReflectivity", entity.getModel().getModelTexture().getReflectivity());
+			myShaderProgram.setUniform( "uModel", Transformation.createTransMat(modelMatrix, entity.getPosition(),1f));
+			myShaderProgram.setUniform("uTexture", entity.getModel().getModelTexture().getTexture());
+            myShaderProgram.setUniform("uShininess", entity.getModel().getModelTexture().getShininess());
+            myShaderProgram.setUniform("uReflectivity", entity.getModel().getModelTexture().getReflectivity());
             entity.getModel().getMesh().draw(GL_TRIANGLES );
 		}
 	}
@@ -153,12 +153,12 @@ public class Sandbox {
 
 	public void drawMeshesShadow ( Mat4 lightViewMatrix, Mat4 lightProjectionMatrix ) {
 		glCullFace(GL_BACK);
-		shaderProgramShadow.useProgram();
-		shaderProgramShadow.setUniform( "uView",       lightViewMatrix );
-		shaderProgramShadow.setUniform( "uProjection", lightProjectionMatrix );
+		myShaderProgramShadow.useProgram();
+		myShaderProgramShadow.setUniform( "uView",       lightViewMatrix );
+		myShaderProgramShadow.setUniform( "uProjection", lightProjectionMatrix );
 
 		for( Entity entity : entityList) {
-			shaderProgramShadow.setUniform( "uModel", Transformation.createTransMat(modelMatrix, entity.getPosition(),1f));
+			myShaderProgramShadow.setUniform( "uModel", Transformation.createTransMat(modelMatrix, entity.getPosition(),1f));
 			entity.getModel().getMesh().draw(GL_TRIANGLES );
 		}
 	}
@@ -201,7 +201,7 @@ public class Sandbox {
 	}
 
 	private void setupShadowMap( int shadowMapSize ) {
-		shaderProgramShadow = new CGFramework.ShaderProgram( getPathForPackage() + "Shadowmap_vs.glsl", getPathForPackage() + "Shadowmap_fs.glsl" );
+		myShaderProgramShadow = new CGFramework.MyShaderProgram( getPathForPackage() + "Shadowmap_vs.glsl", getPathForPackage() + "Shadowmap_fs.glsl" );
 
 		// Create Texture
 		shadowTextureID = glGenTextures();

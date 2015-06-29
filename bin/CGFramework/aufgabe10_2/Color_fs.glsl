@@ -1,5 +1,6 @@
 #version 150
 
+#define AMBILIGHT 0.1
 #define LIGHTS 1
 #define BLINN_ADD_SHINE 100
 #define SHADOW_BIAS 0.0004
@@ -9,11 +10,11 @@ in vec3 V;
 uniform mat4 uModel;
 
 /***************** LIGHTS *************/
-in vec3[LIGHTS] L;
-in float[LIGHTS] attenuationArray;
-uniform vec3[LIGHTS] uLightPosArray;
-uniform vec3[LIGHTS] uLightColorArray;
-uniform float[LIGHTS] uLightRange;
+in vec3 L;
+in float attenuation;
+uniform vec3 uLightPos;
+uniform vec3 uLightColor;
+uniform float uLightRange;
 uniform float uShininess;
 uniform float uReflectivity;
 /**************************************/
@@ -48,29 +49,21 @@ float getAttenuation( vec4 shadowmapCoord ) {
 }
 
 void main(void) {
-    float ambilight = 0.1;
     float lightStartDist = 0;
 
     /************** DIFFUSE AND SPECULAR CALCULATION ************************/
-    vec3 diffuseFinal = vec3(0,0,0);
-    vec3 specularFinal = vec3(0,0,0);
-    int i;
-    for(i=0 ; i<LIGHTS ; i++) {
-        float nDotl = dot(N,L[i]);
-        float lightEndDist = uLightRange[i];
-        float lightIntense = attenuationArray[i];
+    float nDotl = dot(N,L);
+    float lightIntense = attenuation;
 
-        vec3 diffuse = calculateDiffuse(N, L[i], uLightColorArray[i],nDotl);
-        vec3 specular = calculateSpecularBlinn(N, V, L[i], uLightColorArray[i], nDotl, ambilight);
+    vec3 diffuse = calculateDiffuse(N, L, uLightColor,nDotl);
+    vec3 specular = calculateSpecularBlinn(N, V, L, uLightColor, nDotl, AMBILIGHT);
 
-        diffuseFinal += diffuse*lightIntense;
-        specularFinal += specular*lightIntense;
-    }
-    diffuseFinal = max(diffuseFinal,0);
-    specularFinal = max(specularFinal,0);
+    vec3 diffuseFinal = max(diffuse*lightIntense,0);
+    vec3 specularFinal = max(specular*lightIntense,0);
+
     /*************************************************************************/
 
     float shadowFactor = getAttenuation(vShadow);
 
-    FragColor =  ambilight + ( vec4(diffuseFinal, 1.0) + vec4(specularFinal, 1.0) )*shadowFactor;
+    FragColor =  AMBILIGHT + vec4(diffuseFinal, 1.0)*(shadowFactor+AMBILIGHT*2) + vec4(specularFinal, 1.0)*shadowFactor;
 }

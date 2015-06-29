@@ -23,7 +23,6 @@ import util.*;
 import java.io.File;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.*;
@@ -33,16 +32,14 @@ import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
 
 public class Sandbox {
-	private CGFramework.ShaderProgram shaderProgram;
-	private CGFramework.ShaderProgram shaderProgramShadow;
+	private ShaderProgram ShaderProgram;
+	private ShaderProgram ShaderProgramShadow;
     private ArrayList<Light> lights = new ArrayList<>();
 	private ArrayList<Mesh> meshes = new ArrayList<>();
     private ArrayList<Model> models = new ArrayList<>();
 	private ArrayList<ModelTexture> modelTextures = new ArrayList<>();
 
-	private Vec3[] lightPositions;
-	private Vec3[] lightColors;
-	private float[] lightRanges;
+	private Light light;
 
 	private Mat4            modelMatrix;
 	private Mat4            viewMatrix;
@@ -64,14 +61,13 @@ public class Sandbox {
 		// The shader program source files must be put into the same package as the Sandbox class file. This simplifies the 
         // handling in the lab exercise (i.e. for when uploading to Ilias or when correcting) since all code of one student
         // is kept in one package. In productive code the shaders would be put into the 'resource' directory.
-        shaderProgram = new CGFramework.ShaderProgram( getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl" );
+        ShaderProgram = new ShaderProgram( getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl" );
 
 		modelMatrix   = new Mat4();
 		viewMatrix    = Mat4.translation( 0.0f, 0.0f, -3.0f );
 		meshes        = new ArrayList<>();
 
-		createLights();
-		createLightArrays(lights);
+		createLight();
 		createMeshes();
 		createTextures();
         createModels();
@@ -130,12 +126,11 @@ public class Sandbox {
 		float far    = 500.0f;
 		float lightFov    = 90f;
 
-		lights.get(0).moveAroundCenter();
-        createLightArrays(lights);
+		light.moveAroundCenter();
 		//SET UP VIEW AND PROJECTION MATRICES
 		Mat4 projectionMatrix = Mat4.perspective( fov, windowWidth, windowHeight, near, far );
-		Mat4 lightProjectionMatrix = Mat4.perspective(lightFov, shadowMapSize, shadowMapSize, 0.1f, lights.get(0).getRange());
-		Mat4 lightViewMatrix = Mat4.lookAt(lightPositions[0], new Vec3(), new Vec3(0, 1, 0));
+		Mat4 lightProjectionMatrix = Mat4.perspective(lightFov, shadowMapSize, shadowMapSize, 0.1f, light.getRange());
+		Mat4 lightViewMatrix = Mat4.lookAt(light.getPosition(), new Vec3(), new Vec3(0, 1, 0));
 
 		//SHADOW MAPPING RENDER
 		renderShadowMap(lightViewMatrix, lightProjectionMatrix);
@@ -146,26 +141,26 @@ public class Sandbox {
 	
 	public void drawMeshes( Mat4 viewMatrix, Mat4 projMatrix, Mat4 lightViewMatrix, Mat4 lightProjectionMatrix ) {
 		glCullFace(GL_BACK);
-		shaderProgram.useProgram();
-		shaderProgram.setUniform( "uModel",      modelMatrix );
-		shaderProgram.setUniform( "uView",       viewMatrix );  
-		shaderProgram.setUniform( "uProjection", projMatrix );
+		ShaderProgram.useProgram();
+		ShaderProgram.setUniform( "uModel",      modelMatrix );
+		ShaderProgram.setUniform( "uView",       viewMatrix );
+		ShaderProgram.setUniform( "uProjection", projMatrix );
 
-		shaderProgram.setUniform( "uLightProjection", lightProjectionMatrix );
-		shaderProgram.setUniform( "uLightView", lightViewMatrix );
+		ShaderProgram.setUniform( "uLightProjection", lightProjectionMatrix );
+		ShaderProgram.setUniform( "uLightView", lightViewMatrix );
 
-        shaderProgram.setUniform("uInvertedUView",      new Mat4(viewMatrix).inverse() );
-        shaderProgram.setUniform("uNormalMat", createNormalMat(modelMatrix));
+        ShaderProgram.setUniform("uInvertedUView",      new Mat4(viewMatrix).inverse() );
+        ShaderProgram.setUniform("uNormalMat", createNormalMat(modelMatrix));
 
-        shaderProgram.setUniform("uLightPosArray", lightPositions);
-        shaderProgram.setUniform("uLightColorArray", lightColors);
-        shaderProgram.setUniform("uLightRange", lightRanges);
+        ShaderProgram.setUniform("uLightPos", light.getPosition());
+        ShaderProgram.setUniform("uLightColor", light.getColor());
+        ShaderProgram.setUniform("uLightRange", light.getRange());
 
-		shaderProgram.setUniform("uShadowmap", shadowMapTexture);
+		ShaderProgram.setUniform("uShadowmap", shadowMapTexture);
 
 		for( Model model : models ) {
-            shaderProgram.setUniform("uShininess", model.getModelTexture().getShininess());
-            shaderProgram.setUniform("uReflectivity", model.getModelTexture().getReflectivity());
+            ShaderProgram.setUniform("uShininess", model.getModelTexture().getShininess());
+            ShaderProgram.setUniform("uReflectivity", model.getModelTexture().getReflectivity());
             model.getMesh().draw(GL_TRIANGLES );
 		}
 	}
@@ -184,9 +179,9 @@ public class Sandbox {
 
 	public void drawMeshesShadow ( Mat4 lightViewMatrix, Mat4 lightProjectionMatrix ) {
 		glCullFace(GL_BACK);
-		shaderProgramShadow.useProgram();
-		shaderProgramShadow.setUniform( "uView",       lightViewMatrix );
-		shaderProgramShadow.setUniform( "uProjection", lightProjectionMatrix );
+		ShaderProgramShadow.useProgram();
+		ShaderProgramShadow.setUniform( "uView",       lightViewMatrix );
+		ShaderProgramShadow.setUniform( "uProjection", lightProjectionMatrix );
 
 		for( Model model : models ) {
 			model.getMesh().draw(GL_TRIANGLES );
@@ -205,25 +200,12 @@ public class Sandbox {
         models.add(new Model(meshes.get(0), modelTextures.get(0)));
     }
 
-	private void createLights() {
-		lights.add( new Light(new Vec3(3,3,3), new Vec3(1,1,1),15f,0.03f));
+	private void createLight() {
+		light = new Light(new Vec3(3,3,3), new Vec3(1,1,1),15f,0.03f);
     }
 
-	private void createLightArrays(List<Light> lightList) {
-		lightPositions = new Vec3[lightList.size()];
-		lightColors = new Vec3[lightList.size()];
-		lightRanges = new float[lightList.size()];
-
-		for(int i=0 ; i<lightList.size() ; i++) {
-			lightPositions[i] = lights.get(i).getPosition();
-			lightColors[i]      = lights.get(i).getColor();
-			lightRanges[i]      = lights.get(i).getRange();
-		}
-
-	}
-
 	private void setupShadowMap( int shadowMapSize ) {
-		shaderProgramShadow = new CGFramework.ShaderProgram( getPathForPackage() + "Shadowmap_vs.glsl", getPathForPackage() + "Shadowmap_fs.glsl" );
+		ShaderProgramShadow = new ShaderProgram( getPathForPackage() + "Shadowmap_vs.glsl", getPathForPackage() + "Shadowmap_fs.glsl" );
 
 		// Create Texture
 		shadowTextureID = glGenTextures();

@@ -17,10 +17,10 @@ out vec3 uPosition;
 out vec3 N;
 out vec3 V;
 
-uniform vec3[LIGHTS] uLightPosArray;
-uniform float[LIGHTS] uLightRange;
-out vec3[LIGHTS] L;
-out float[LIGHTS] attenuationArray;
+uniform vec3 uLightPos;
+uniform float uLightRange;
+out vec3 L;
+out float attenuation;
 
 out vec2 vTextureCoords;
 
@@ -55,12 +55,11 @@ void main(void) {
 
     float lightEndDist;
     vec3 lightWorldPosition;
-    int i;
-    for(i=0 ; i<L.length() ; i++) {
-        lightWorldPosition = mat3(uModel) * uLightPosArray[i];
-        L[i] = normalize(lightWorldPosition - worldPosition.xyz);
-        attenuationArray[i] = attenuationOfLight(worldPosition.xyz, lightWorldPosition, 0 , uLightRange[i] );
-    }
+
+    lightWorldPosition = mat3(uModel) * uLightPos;
+    L = normalize(lightWorldPosition - worldPosition.xyz);
+    attenuation = attenuationOfLight(worldPosition.xyz, lightWorldPosition, 0 , uLightRange );
+
 
     gl_Position = uProjection * uView * worldPosition;
 }

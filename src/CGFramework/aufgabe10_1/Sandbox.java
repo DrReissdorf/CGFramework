@@ -14,7 +14,6 @@ import static org.lwjgl.opengl.GL15.*;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 
 import CGFramework.*;
 import math.Mat4;
@@ -26,20 +25,15 @@ import org.lwjgl.input.Mouse;
 import util.*;
 
 public class Sandbox {
-	private CGFramework.ShaderProgram shaderProgram;
-    private ArrayList<Light> lights = new ArrayList<>();
+	private ShaderProgram shaderProgram;
 	private ArrayList<Mesh> meshes = new ArrayList<>();
     private ArrayList<Model> models = new ArrayList<>();
 	private ArrayList<ModelTexture> modelTextures = new ArrayList<>();
-    Vec3[] lightPositions;
-    Vec3[] lightColors;
-    float[] lightRanges;
+	private Light light;
 	private Mat4            modelMatrix;
 	private Mat4            viewMatrix;
 	private int             windowWidth;
 	private int             windowHeight;
-
-	private Mat4 lightViewMatrix;
 	
 	/**
 	 * @param width The horizontal window size in pixels
@@ -51,13 +45,12 @@ public class Sandbox {
 		// The shader program source files must be put into the same package as the Sandbox class file. This simplifies the 
         // handling in the lab exercise (i.e. for when uploading to Ilias or when correcting) since all code of one student
         // is kept in one package. In productive code the shaders would be put into the 'resource' directory.
-        shaderProgram = new CGFramework.ShaderProgram( getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl" );
+        shaderProgram = new ShaderProgram( getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl" );
 		modelMatrix   = new Mat4();
 		viewMatrix    = Mat4.translation( 0.0f, 0.0f, -3.0f );
-		lightViewMatrix    = Mat4.translation( -3f, -3.0f, -3.0f );
 		meshes        = new ArrayList<Mesh>();
 
-		createLights();
+		createLight();
 		createMeshes();
 		createTextures();
         createModels();
@@ -125,9 +118,8 @@ public class Sandbox {
 
 		Mat4 lightProjectionMatrix = Mat4.perspective(lightFov, windowWidth, windowHeight, near, far);
 		glViewport( 0, 0, windowWidth, windowHeight );
-		lights.get(0).moveAroundCenter();
-		createLightArrays(lights);
-		this.drawMeshes( Mat4.lookAt(lightPositions[0], new Vec3(), new Vec3(0,1,0)), lightProjectionMatrix );
+		light.moveAroundCenter();
+		this.drawMeshes( Mat4.lookAt(light.getPosition(), new Vec3(), new Vec3(0,1,0)), lightProjectionMatrix );
 	}	
 	
 	public void drawMeshes( Mat4 viewMatrix, Mat4 projMatrix ) {
@@ -138,51 +130,32 @@ public class Sandbox {
 
         shaderProgram.setUniform("uInvertedUView",      new Mat4(viewMatrix).inverse() );
         shaderProgram.setUniform("uNormalMat", createNormalMat(modelMatrix));
-        shaderProgram.setUniform("uLightPosArray", lightPositions);
-        shaderProgram.setUniform("uLightColorArray", lightColors);
-        shaderProgram.setUniform("uLightRange", lightRanges);
+        shaderProgram.setUniform("uLightPos", light.getPosition());
+        shaderProgram.setUniform("uLightColor", light.getColor());
+        shaderProgram.setUniform("uLightRange", light.getRange());
 
 		for( Model model : models ) {
-       //     shaderProgram.setUniform("uTexture",model.getModelTexture().getTexture());
             shaderProgram.setUniform("uShininess", model.getModelTexture().getShininess());
             shaderProgram.setUniform("uReflectivity", model.getModelTexture().getReflectivity());
             model.getMesh().draw(GL_TRIANGLES );
 		}
 	}
 	
-	protected void createMeshes() {
+	private void createMeshes() {
 		loadObj("Meshes/monkey_scene.obj");
 	}
 
-	 protected void createTextures() {
+	private void createTextures() {
 		modelTextures.add(new ModelTexture(new Texture("Textures/dragon.png"), 1f, 32));
 	}
 
-	protected void createModels() {
+	private void createModels() {
         models.add(new Model(meshes.get(0), modelTextures.get(0)));
     }
 
-	protected void createLights() {
-        lights.add( new Light(new Vec3(3,3,3), new Vec3(1,1,1),10f,0.03f));
+	private void createLight() {
+        light = new Light(new Vec3(3,3,3), new Vec3(1,1,1),50f,0.03f);
     }
-
-	protected void createLightArrays(List<Light> lightList) {
-		lightPositions = new Vec3[lightList.size()];
-		lightColors = new Vec3[lightList.size()];
-		lightRanges = new float[lightList.size()];
-
-		for(int i=0 ; i<lightList.size() ; i++) {
-			lightPositions[i] = lights.get(i).getPosition();
-			lightColors[i]      = lights.get(i).getColor();
-			lightRanges[i]      = lights.get(i).getRange();
-		}
-
-	}
-
-	protected Mat4 createLightViewMatrix(Vec3 lightPosition) {
-		Vec3 translationVec = new Vec3().sub(lightPosition);
-		return Mat4.translation(translationVec);
-	}
 	
 	private void loadObj( String filename )
 	{
