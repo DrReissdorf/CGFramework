@@ -1,13 +1,4 @@
 package CGFramework.myself;
-/*
- * Cologne University of Applied Sciences
- * Institute for Media and Imaging Technologies - Computer Graphics Group
- *
- * Copyright (c) 2014 Cologne University of Applied Sciences. All rights reserved.
- *
- * This source code is property of the Cologne University of Applied Sciences. Any redistribution
- * and use in source and binary forms, with or without modification, requires explicit permission.
- */
 
 import CGFramework.*;
 import math.Mat4;
@@ -15,15 +6,18 @@ import math.Vec3;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.EXTTextureSRGB;
 import org.lwjgl.opengl.GL11;
 import util.*;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE;
 import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL14.*;
 import static org.lwjgl.opengl.GL30.*;
@@ -33,6 +27,7 @@ import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
 public class Sandbox {
 	private CGFramework.MyShaderProgram myShaderProgram;
 	private CGFramework.MyShaderProgram myShaderProgramShadow;
+	private CGFramework.MyShaderProgram postProcessShaderProgram;
     private ArrayList<Light> lightList = new ArrayList<>();
 	private ArrayList<Mesh> meshes = new ArrayList<>();
     private ArrayList<Model> modelList = new ArrayList<>();
@@ -52,6 +47,11 @@ public class Sandbox {
 	private int shadowTextureID;
 	private int shadowMapSize;
     private Texture shadowMapTexture;
+
+	private int postProcessTextureID;
+	private int postProcessFrameBuffer;
+	private Texture postProcessTexture;
+	private Mesh quadMesh;
 	
 	/**
 	 * @param width The horizontal window size in pixels
@@ -64,6 +64,7 @@ public class Sandbox {
         // handling in the lab exercise (i.e. for when uploading to Ilias or when correcting) since all code of one student
         // is kept in one package. In productive code the shaders would be put into the 'resource' directory.
         myShaderProgram = new CGFramework.MyShaderProgram( getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl" );
+		postProcessShaderProgram = new CGFramework.MyShaderProgram( getPathForPackage() + "Postprocess_vs.glsl", getPathForPackage() + "Postprocess_fs.glsl" );
 
 		modelMatrix   = new Mat4();
 		viewMatrix    = Mat4.translation( 0.0f, 0.0f, -3.0f );
@@ -79,6 +80,10 @@ public class Sandbox {
 		shadowMapSize = 1024;
 		setupShadowMap(shadowMapSize);
         shadowMapTexture = new Texture(shadowTextureID);
+
+		postProcessTextureID = createTextureBuffer(width, height);
+		postProcessTexture = new Texture(postProcessTextureID);
+		postProcessFrameBuffer = createFrameBuffer(postProcessTextureID, width, height);
 
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
@@ -108,12 +113,32 @@ public class Sandbox {
 		//SHADOW MAPPING RENDER
 		renderShadowMap(lightViewMatrix, lightProjectionMatrix);
 
-		//NORMAL RENDER
-		this.drawMeshes( viewMatrix, projectionMatrix, lightViewMatrix, lightProjectionMatrix );
-	}	
-	
-	public void drawMeshes( Mat4 viewMatrix, Mat4 projMatrix, Mat4 lightViewMatrix, Mat4 lightProjectionMatrix ) {
+		//DRAW TO TEXTER
+		this.drawToTexture(viewMatrix, projectionMatrix, lightViewMatrix, lightProjectionMatrix);
+
+		//POST PROCESS THE TEXTURE
+		drawMeshes();
+	}
+
+	public void drawMeshes() {
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearColor(0, 0, 0, 1);
+		glViewport(0, 0, windowWidth, windowHeight);
 		glCullFace(GL_BACK);
+
+		postProcessShaderProgram.useProgram();
+		postProcessShaderProgram.setUniform("uTexture", postProcessTexture);
+		quadMesh.draw();
+	}
+
+	public void drawToTexture( Mat4 viewMatrix, Mat4 projMatrix, Mat4 lightViewMatrix, Mat4 lightProjectionMatrix ) {
+		glBindFramebuffer(GL_FRAMEBUFFER, postProcessFrameBuffer);
+		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT|GL11.GL_DEPTH_BUFFER_BIT);
+		GL11.glClearColor(0.5f, 0.7f, 1, 1);
+		glViewport( 0, 0, windowWidth, windowHeight );
+		glCullFace(GL_BACK);
+
 		myShaderProgram.useProgram();
 		myShaderProgram.setUniform( "uView",       viewMatrix );
 		myShaderProgram.setUniform( "uProjection", projMatrix );
@@ -131,7 +156,7 @@ public class Sandbox {
 		myShaderProgram.setUniform("uShadowmap", shadowMapTexture);
 
 		for( Entity entity : entityList) {
-			myShaderProgram.setUniform( "uModel", Transformation.createTransMat(modelMatrix, entity.getPosition(),1f));
+			myShaderProgram.setUniform("uModel", Transformation.createTransMat(modelMatrix, entity.getPosition(),1f));
 			myShaderProgram.setUniform("uTexture", entity.getModel().getModelTexture().getTexture());
             myShaderProgram.setUniform("uShininess", entity.getModel().getModelTexture().getShininess());
             myShaderProgram.setUniform("uReflectivity", entity.getModel().getModelTexture().getReflectivity());
@@ -144,11 +169,6 @@ public class Sandbox {
 		GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
 		glViewport( 0, 0, shadowMapSize, shadowMapSize );
 		drawMeshesShadow(lightViewMatrix, lightProjectionMatrix);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT|GL11.GL_DEPTH_BUFFER_BIT);
-		GL11.glClearColor(0.5f, 0.7f, 1, 1);
-		glViewport( 0, 0, windowWidth, windowHeight );
 	}
 
 	public void drawMeshesShadow ( Mat4 lightViewMatrix, Mat4 lightProjectionMatrix ) {
@@ -163,9 +183,64 @@ public class Sandbox {
 		}
 	}
 
+	private int createTextureBuffer(int width, int height) {
+		int texbuf = glGenTextures();
+		glBindTexture( GL_TEXTURE_2D, texbuf );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, width, height,
+				0, GL_RGB, GL_FLOAT, (ByteBuffer)null );
+		glBindTexture( GL_TEXTURE_2D, 0 );
+		return texbuf;
+	}
+
+	private int createFrameBuffer(int texbuf, int width, int height) {
+		int framebuf = glGenFramebuffers();
+		glBindFramebuffer( GL_FRAMEBUFFER, framebuf );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+				GL_TEXTURE_2D, texbuf, 0 );
+		int depthrenderbuffer = glGenRenderbuffers();
+		glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+				GL_RENDERBUFFER, depthrenderbuffer);
+		glEnable(GL_FRAMEBUFFER_SRGB);
+		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+		return framebuf;
+	}
+
+	private void createQuad() {
+		float[] positions = {
+				-1.0f, -1.0f, 0.0f,	//0	lower-left
+				-1.0f, 1.0f, 0.0f,	//1 upper-left
+				1.0f, 1.0f,0.0f,	//2 upper right
+				1.0f, -1.0f,0.0f};	//3 lower right
+
+		int[] indices = {
+				0,3,2,
+				2,1,0};
+
+		float[] textureCoords = {
+				0,0,0,
+				0,1,0,
+				1,1,0,
+				1,0,0};
+
+		Mesh mesh = new Mesh( GL_STATIC_DRAW );
+		mesh.setAttribute( 0, positions, 3 );
+		//	mesh.setAttribute( 1, normals, 3 );
+		mesh.setAttribute( 2, textureCoords, 3 );
+		mesh.setIndices( indices );
+
+		quadMesh = mesh;
+	}
+
 	private void createMeshes() {
 		loadObj("Meshes/monkey_scene.obj");
         loadObj("Meshes/dragon.obj");
+		createQuad();
 	}
 
 	private void createTextures() {
@@ -261,6 +336,11 @@ public class Sandbox {
 	public void onResize( int width, int height ) {
 		windowWidth  = width;
 		windowHeight = height;
+		glBindTexture( GL_TEXTURE_2D, postProcessTextureID );
+		glTexImage2D( GL_TEXTURE_2D, 0, EXTTextureSRGB.GL_SRGB_EXT, windowWidth, windowHeight,
+				0, GL_RGB, GL_FLOAT, (ByteBuffer)null );
+		glBindTexture( GL_TEXTURE_2D, 0 );
+
 	}
 
     private FloatBuffer createFloatBuffer(float[] floats) {

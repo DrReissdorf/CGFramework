@@ -1,8 +1,6 @@
 #version 150
 #extension GL_ARB_explicit_attrib_location : enable
 
-#define LIGHTS 1
-
 layout(location=0) in vec3 aPosition;
 layout(location=1) in vec3 aNormal;
 layout(location=2) in vec2 textureCoords;
@@ -50,7 +48,7 @@ void main(void) {
 
     lightWorldPosition = mat3(uModel) * uLightPos;
     L = normalize(lightWorldPosition - worldPosition.xyz);
-    attenuation = attenuationOfLight(worldPosition.xyz, lightWorldPosition, 0 , uLightRange );
+    attenuation = attenuationOfLight(worldPosition.xyz, lightWorldPosition, 2 , uLightRange );
 
     gl_Position = uProjection * uView * worldPosition;
 }

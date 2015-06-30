@@ -1,6 +1,6 @@
 #version 150
 
-#define AMBILIGHT 0.0
+#define AMBILIGHT 0
 
 in vec3 N;
 in vec3 V;
@@ -23,9 +23,9 @@ vec3 calculateDiffuse(vec3 N, vec3 L, vec3 lightColor, float nDotl) {
     return diffuseLighting;
 }
 
-vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl, float ambilight) {
+vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl) {
     vec3 specular = vec3(0,0,0);
-    if(nDotl > ambilight) {
+    if(nDotl > AMBILIGHT) {
         vec3 lightAddCam = L+V;
         vec3 H = normalize( lightAddCam/sqrt(dot(lightAddCam,lightAddCam)) );
         specular =  lightColor * uReflectivity * vec3(max(pow(dot(N, H), uShininess), 0.0));
@@ -41,11 +41,11 @@ void main(void) {
     float lightIntense = attenuation;
 
     vec3 diffuse = calculateDiffuse(N, L, uLightColor,nDotl);
-    vec3 specular = calculateSpecularBlinn(N, V, L, uLightColor, nDotl, AMBILIGHT);
+    vec3 specular = calculateSpecularBlinn(N, V, L, uLightColor, nDotl);
 
-    vec3 diffuseFinal = max(diffuse*lightIntense,0);
+    vec3 diffuseFinal = max(diffuse*lightIntense,AMBILIGHT);
     vec3 specularFinal = max(specular*lightIntense,0);
     /*************************************************************************/
 
-    FragColor =  AMBILIGHT + vec4(diffuseFinal, 1.0) + vec4(specularFinal, 1.0);
+    FragColor = vec4(diffuseFinal, 1.0) + vec4(specularFinal, 1.0);
 }

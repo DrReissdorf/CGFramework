@@ -1,4 +1,4 @@
-package CGFramework.aufgabe11_2;
+package CGFramework.aufgabe11_3;
 /*
  * Cologne University of Applied Sciences
  * Institute for Media and Imaging Technologies - Computer Graphics Group
@@ -223,7 +223,7 @@ public class Sandbox {
 	}
 
 	private void createLight() {
-		light = new Light(new Vec3(0.0f,0.3f,2f), new Vec3(1,1,1),30f,0.03f);
+		light = new Light(new Vec3(0.0f,0.3f,2f), new Vec3(1,1,1),2000f,0.03f);
 	}
 
 	private void loadObj( String filename )	{

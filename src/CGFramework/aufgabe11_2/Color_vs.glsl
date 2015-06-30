@@ -24,11 +24,6 @@ out float attenuation;
 
 out vec2 vTextureCoords;
 
-// SHADOW
-uniform mat4 uLightProjection;
-uniform mat4 uLightView;
-out vec4 vShadow;
-
 float attenuationOfLight(vec3 vPos, vec3 lightPos, float lightStartDist, float lightEndDist) {
     float distance = length(vPos-lightPos);
     float lightIntense;
@@ -45,9 +40,6 @@ float attenuationOfLight(vec3 vPos, vec3 lightPos, float lightStartDist, float l
 void main(void) {
     vTextureCoords = textureCoords;
 
-    // VertexPosition aus Sicht der Lichtquelle
-    vShadow = uLightProjection * uLightView * vec4(aPosition,1.0);
-
     vec4 worldPosition = uModel * vec4(aPosition,1.0);
 
     N = normalize( mat3(uNormalMat) * aNormal );
@@ -59,7 +51,6 @@ void main(void) {
     lightWorldPosition = mat3(uModel) * uLightPos;
     L = normalize(lightWorldPosition - worldPosition.xyz);
     attenuation = attenuationOfLight(worldPosition.xyz, lightWorldPosition, 0 , uLightRange );
-
 
     gl_Position = uProjection * uView * worldPosition;
 }

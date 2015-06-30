@@ -99,12 +99,12 @@ void main(void) {
         diffuseFinal += diffuse*lightIntense;
         specularFinal += specular*lightIntense;
     }
-    diffuseFinal = max(diffuseFinal,0);
+    diffuseFinal = max(diffuseFinal,AMBILIGHT);
     specularFinal = max(specularFinal,0);
     /*************************************************************************/
 
     vec4 textureColor = texture(uTexture,vTextureCoords);
     float shadowFactor = getAttenuationPCF(vShadow);
 
-    FragColor = AMBILIGHT + vec4(diffuseFinal, 1.0)*textureColor*(shadowFactor+AMBILIGHT*2) + vec4(specularFinal, 1.0)*shadowFactor;
+    FragColor = vec4(diffuseFinal, 1.0)*textureColor*(shadowFactor+AMBILIGHT) + vec4(specularFinal, 1.0)*shadowFactor;
 }
