@@ -4,6 +4,8 @@
 #define BLINN_ADD_SHINE 100
 #define SHADOW_BIAS 0.0004
 #define AMBILIGHT 0.15
+#define AMBILIGHT_MULT AMBILIGHT*3
+#define PCF_SAMPLES 1
 
 in vec3 N;
 in vec3 V;
@@ -61,8 +63,8 @@ float getAttenuationPCF( vec4 shadowmapCoord ) {
 
     float shadowmap_factor = 0.0;
     float numberOfSamples = 0;
-    for (int y = -1 ; y <= 1 ; y++) {
-        for (int x = -1 ; x <= 1 ; x++) {
+    for (int y = -PCF_SAMPLES ; y <= PCF_SAMPLES ; y++) {
+        for (int x = -PCF_SAMPLES ; x <= PCF_SAMPLES ; x++) {
 
             //calculate offstes with size of texels
             vec2 Offsets = vec2(x * xOffset, y * yOffset);
@@ -99,12 +101,12 @@ void main(void) {
         diffuseFinal += diffuse*lightIntense;
         specularFinal += specular*lightIntense;
     }
-    diffuseFinal = max(diffuseFinal,AMBILIGHT);
+    diffuseFinal = max(diffuseFinal,AMBILIGHT_MULT);
     specularFinal = max(specularFinal,0);
     /*************************************************************************/
 
     vec4 textureColor = texture(uTexture,vTextureCoords);
     float shadowFactor = getAttenuationPCF(vShadow);
 
-    FragColor = vec4(diffuseFinal, 1.0)*textureColor*(shadowFactor+AMBILIGHT) + vec4(specularFinal, 1.0)*shadowFactor;
+    FragColor = vec4(diffuseFinal, 1.0)*(textureColor+AMBILIGHT)*(shadowFactor + AMBILIGHT_MULT) + vec4(specularFinal, 1.0)*shadowFactor;
 }

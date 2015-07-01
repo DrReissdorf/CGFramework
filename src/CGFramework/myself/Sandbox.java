@@ -3,7 +3,6 @@ package CGFramework.myself;
 import CGFramework.*;
 import math.Mat4;
 import math.Vec3;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.EXTTextureSRGB;
@@ -17,17 +16,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE;
-import static org.lwjgl.opengl.GL13.*;
-import static org.lwjgl.opengl.GL14.*;
 import static org.lwjgl.opengl.GL30.*;
 
 import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
 
 public class Sandbox {
-	private CGFramework.MyShaderProgram myShaderProgram;
-	private CGFramework.MyShaderProgram myShaderProgramShadow;
-	private CGFramework.MyShaderProgram postProcessShaderProgram;
+	private MyShaderProgram myShaderProgram;
+	private MyShaderProgram myShaderProgramShadow;
+	private MyShaderProgram postProcessShaderProgram;
     private ArrayList<Light> lightList = new ArrayList<>();
 	private ArrayList<Mesh> meshes = new ArrayList<>();
     private ArrayList<Model> modelList = new ArrayList<>();
@@ -63,8 +59,9 @@ public class Sandbox {
 		// The shader program source files must be put into the same package as the Sandbox class file. This simplifies the 
         // handling in the lab exercise (i.e. for when uploading to Ilias or when correcting) since all code of one student
         // is kept in one package. In productive code the shaders would be put into the 'resource' directory.
-        myShaderProgram = new CGFramework.MyShaderProgram( getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl" );
-		postProcessShaderProgram = new CGFramework.MyShaderProgram( getPathForPackage() + "Postprocess_vs.glsl", getPathForPackage() + "Postprocess_fs.glsl" );
+        myShaderProgram = new MyShaderProgram( getPathForPackage() + "Color_vs.glsl", getPathForPackage() + "Color_fs.glsl" );
+		postProcessShaderProgram = new MyShaderProgram( getPathForPackage() + "Postprocess_vs.glsl", getPathForPackage() + "Postprocess_fs.glsl" );
+		myShaderProgramShadow = new MyShaderProgram( getPathForPackage() + "Shadowmap_vs.glsl", getPathForPackage() + "Shadowmap_fs.glsl" );
 
 		modelMatrix   = new Mat4();
 		viewMatrix    = Mat4.translation( 0.0f, 0.0f, -3.0f );
@@ -78,12 +75,15 @@ public class Sandbox {
         createEntities();
 
 		shadowMapSize = 1024;
-		setupShadowMap(shadowMapSize);
-        shadowMapTexture = new Texture(shadowTextureID);
+		shadowTextureID = FrameBufferTextureFactory.setupShadowMapTextureBuffer(shadowMapSize, shadowMapSize);
+		shadowMapTexture = new Texture(shadowTextureID);
+		shadowFrameBuffer = FrameBufferFactory.setupShadowFrameBuffer(shadowTextureID);
 
-		postProcessTextureID = createPostProcessTextureBuffer(width, height);
+		// To make texture resizable we need to assign it to 4k first, it just scales down
+		postProcessTextureID = FrameBufferTextureFactory.setupPostProcessTextureBuffer(3840, 2160);
 		postProcessTexture = new Texture(postProcessTextureID);
-		postProcessFrameBuffer = createFrameBuffer(postProcessTextureID, width, height);
+		postProcessFrameBuffer = FrameBufferFactory.setupPostProcessFrameBuffer(postProcessTextureID, 3840, 2160);
+		resizeTexture(postProcessTextureID, width, height);
 
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
@@ -102,7 +102,7 @@ public class Sandbox {
 		float far       = 500.0f;
 		float lightFov  = 90f;
 
-		lightList.get(0).moveAroundCenter();
+	//	lightList.get(0).moveAroundCenter();
         createLightArrays(lightList);
 
 		//SET UP VIEW AND PROJECTION MATRICES
@@ -117,10 +117,10 @@ public class Sandbox {
 		this.drawToTexture(viewMatrix, projectionMatrix, lightViewMatrix, lightProjectionMatrix);
 
 		//POST PROCESS THE TEXTURE
-		drawMeshes();
+		drawTextureToScreen();
 	}
 
-	public void drawMeshes() {
+	public void drawTextureToScreen() {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glClearColor(0, 0, 0, 1);
@@ -168,10 +168,7 @@ public class Sandbox {
 		glBindFramebuffer( GL_FRAMEBUFFER, shadowFrameBuffer);
 		GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
 		glViewport( 0, 0, shadowMapSize, shadowMapSize );
-		drawMeshesShadow(lightViewMatrix, lightProjectionMatrix);
-	}
 
-	public void drawMeshesShadow ( Mat4 lightViewMatrix, Mat4 lightProjectionMatrix ) {
 		glCullFace(GL_BACK);
 		myShaderProgramShadow.useProgram();
 		myShaderProgramShadow.setUniform( "uView",       lightViewMatrix );
@@ -181,60 +178,6 @@ public class Sandbox {
 			myShaderProgramShadow.setUniform( "uModel", Transformation.createTransMat(modelMatrix, entity.getPosition(),1f));
 			entity.getModel().getMesh().draw(GL_TRIANGLES );
 		}
-	}
-
-	private int createPostProcessTextureBuffer(int width, int height) {
-		int texbuf = glGenTextures();
-		glBindTexture( GL_TEXTURE_2D, texbuf );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		glTexImage2D( GL_TEXTURE_2D, 0, EXTTextureSRGB.GL_SRGB_EXT, width, height, //EXTTextureSRGB.GL_SRGB_EXT -> linear intensisity as pixel values
-				0, GL_RGB, GL_FLOAT, (ByteBuffer)null );
-		glBindTexture( GL_TEXTURE_2D, 0 );
-		return texbuf;
-	}
-
-	private int createFrameBuffer(int texbuf, int width, int height) {
-		int framebuf = glGenFramebuffers();
-		glBindFramebuffer( GL_FRAMEBUFFER, framebuf );
-		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-				GL_TEXTURE_2D, texbuf, 0 );
-		int depthrenderbuffer = glGenRenderbuffers();
-		glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-				GL_RENDERBUFFER, depthrenderbuffer);
-		//glEnable(GL_FRAMEBUFFER_SRGB);  // gamma correction
-		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-		return framebuf;
-	}
-
-	private void createQuad() {
-		float[] positions = {
-				-1.0f, -1.0f, 0.0f,	//0	lower-left
-				-1.0f, 1.0f, 0.0f,	//1 upper-left
-				1.0f, 1.0f,0.0f,	//2 upper right
-				1.0f, -1.0f,0.0f};	//3 lower right
-
-		int[] indices = {
-				0,3,2,
-				2,1,0};
-
-		float[] textureCoords = {
-				0,0,0,
-				0,1,0,
-				1,1,0,
-				1,0,0};
-
-		Mesh mesh = new Mesh( GL_STATIC_DRAW );
-		mesh.setAttribute( 0, positions, 3 );
-		//	mesh.setAttribute( 1, normals, 3 );
-		mesh.setAttribute( 2, textureCoords, 3 );
-		mesh.setIndices( indices );
-
-		quadMesh = mesh;
 	}
 
 	private void createMeshes() {
@@ -275,44 +218,32 @@ public class Sandbox {
 
 	}
 
-	private void setupShadowMap( int shadowMapSize ) {
-		myShaderProgramShadow = new CGFramework.MyShaderProgram( getPathForPackage() + "Shadowmap_vs.glsl", getPathForPackage() + "Shadowmap_fs.glsl" );
+	private void createQuad() {
+		float[] positions = {
+				-1.0f, -1.0f, 0.0f,	//0	lower-left
+				-1.0f, 1.0f, 0.0f,	//1 upper-left
+				1.0f, 1.0f,0.0f,	//2 upper right
+				1.0f, -1.0f,0.0f};	//3 lower right
 
-		// Create Texture
-		shadowTextureID = glGenTextures();
-		glBindTexture(GL_TEXTURE_2D, shadowTextureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, shadowMapSize, shadowMapSize,
-				0, GL_DEPTH_COMPONENT, GL_FLOAT, (FloatBuffer) null);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		int[] indices = {
+				0,3,2,
+				2,1,0};
 
-		//Create floatbuffer to represent whitecolor for border_color
-		glTexParameter(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, createFloatBuffer(new float[]{1,1,1,1}));
+		float[] textureCoords = {
+				0,0,0,
+				0,1,0,
+				1,1,0,
+				1,0,0};
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		Mesh mesh = new Mesh( GL_STATIC_DRAW );
+		mesh.setAttribute( 0, positions, 3 );
+		mesh.setAttribute( 2, textureCoords, 3 );
+		mesh.setIndices( indices );
 
-		//Create Framebuffer
-		shadowFrameBuffer = glGenFramebuffers();
-		glBindFramebuffer(GL_FRAMEBUFFER, shadowFrameBuffer);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowTextureID, 0);
-		glReadBuffer(GL_NONE);
-		glDrawBuffer(GL_NONE);
-
-		int err = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		if( err != GL_FRAMEBUFFER_COMPLETE) {
-			System.out.println("Frame buffer is not complete. Error: " + err);
-			System.exit(-1);
-		}
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		quadMesh = mesh;
 	}
 
-	private void loadObj( String filename )
-	{
+	private void loadObj( String filename )	{
 		OBJContainer        objContainer = OBJContainer.loadFile( filename );
 		ArrayList<OBJGroup> objGroups    = objContainer.getGroups();
 		
@@ -336,19 +267,16 @@ public class Sandbox {
 	public void onResize( int width, int height ) {
 		windowWidth  = width;
 		windowHeight = height;
-		glBindTexture( GL_TEXTURE_2D, postProcessTextureID );
-		glTexImage2D( GL_TEXTURE_2D, 0, EXTTextureSRGB.GL_SRGB_EXT, windowWidth, windowHeight,
-				0, GL_RGB, GL_FLOAT, (ByteBuffer)null );
-		glBindTexture( GL_TEXTURE_2D, 0 );
 
+		resizeTexture(postProcessTextureID, width, height);
 	}
 
-    private FloatBuffer createFloatBuffer(float[] floats) {
-        FloatBuffer fb = BufferUtils.createFloatBuffer(floats.length);
-        fb.put(floats);
-        fb.flip();
-        return fb;
-    }
+	private void resizeTexture(int textureID, int width, int height) {
+		glBindTexture( GL_TEXTURE_2D, textureID );
+		glTexImage2D( GL_TEXTURE_2D, 0, EXTTextureSRGB.GL_SRGB_EXT, width, height,
+				0, GL_RGB, GL_FLOAT, (FloatBuffer)null );
+		glBindTexture( GL_TEXTURE_2D, 0 );
+	}
 
     private Mat4 createNormalMat(Mat4 modelMatrix) {
         return Mat4.inverse(modelMatrix).transpose();

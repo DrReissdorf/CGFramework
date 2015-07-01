@@ -53,7 +53,7 @@ vec4 filmicToneMapping(vec4 color) {
 void main() {
     vec4 texColor = texture(uTexture,vTextureCoords);
     vec4 filmic =  filmicToneMapping(texColor);
-  //  vec4 exponential = exponentialToneMapping(texColor, 1.0);
+ //   vec4 exponential = exponentialToneMapping(texColor, 1.0);
     FragColor = filmic;
     FragColor = gammaCorrection(FragColor);
 }
