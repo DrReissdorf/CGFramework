@@ -81,7 +81,7 @@ public class Sandbox {
 		setupShadowMap(shadowMapSize);
         shadowMapTexture = new Texture(shadowTextureID);
 
-		postProcessTextureID = createTextureBuffer(width, height);
+		postProcessTextureID = createPostProcessTextureBuffer(width, height);
 		postProcessTexture = new Texture(postProcessTextureID);
 		postProcessFrameBuffer = createFrameBuffer(postProcessTextureID, width, height);
 
@@ -183,14 +183,14 @@ public class Sandbox {
 		}
 	}
 
-	private int createTextureBuffer(int width, int height) {
+	private int createPostProcessTextureBuffer(int width, int height) {
 		int texbuf = glGenTextures();
 		glBindTexture( GL_TEXTURE_2D, texbuf );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, width, height,
+		glTexImage2D( GL_TEXTURE_2D, 0, EXTTextureSRGB.GL_SRGB_EXT, width, height, //EXTTextureSRGB.GL_SRGB_EXT -> linear intensisity as pixel values
 				0, GL_RGB, GL_FLOAT, (ByteBuffer)null );
 		glBindTexture( GL_TEXTURE_2D, 0 );
 		return texbuf;
@@ -206,7 +206,7 @@ public class Sandbox {
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
 				GL_RENDERBUFFER, depthrenderbuffer);
-		glEnable(GL_FRAMEBUFFER_SRGB);
+		//glEnable(GL_FRAMEBUFFER_SRGB);  // gamma correction
 		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 		return framebuf;
 	}

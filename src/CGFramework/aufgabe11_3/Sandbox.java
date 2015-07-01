@@ -14,6 +14,7 @@ import math.Mat4;
 import math.Vec3;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.EXTTextureSRGB;
 import util.*;
 
 import java.io.File;
@@ -171,7 +172,7 @@ public class Sandbox {
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16F, width, height,
+		glTexImage2D( GL_TEXTURE_2D, 0, EXTTextureSRGB.GL_SRGB_EXT, width, height,
 				0, GL_RGB, GL_FLOAT, (ByteBuffer)null );
 		glBindTexture( GL_TEXTURE_2D, 0 );
 		return texbuf;

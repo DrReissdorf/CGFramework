@@ -28,8 +28,7 @@ vec4 exponentialToneMapping(vec4 color, float exposure) {
 void main() {
     vec4 texColor = texture(uTexture,vTextureCoords);
     vec4 exponential = exponentialToneMapping(texColor, 1.0);
-    FragColor = exponential;
 
-    FragColor = gammaCorrection(FragColor);
- //  FragColor = texColor;
+    FragColor = gammaCorrection(exponential);
+ // FragColor = texColor;
 }

@@ -55,6 +55,5 @@ void main() {
     vec4 filmic =  filmicToneMapping(texColor);
   //  vec4 exponential = exponentialToneMapping(texColor, 1.0);
     FragColor = filmic;
-  //  FragColor = gammaCorrection(FragColor);
- //  FragColor = texColor;
+    FragColor = gammaCorrection(FragColor);
 }
