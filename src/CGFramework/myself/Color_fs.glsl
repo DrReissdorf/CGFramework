@@ -57,8 +57,7 @@ float getAttenuationPCF( vec4 shadowmapCoord ) {
 
     /************ get texturesize *************/
     ivec2 texSize = textureSize(uShadowmap,0);
-    float xOffset = 1.0/float(texSize.x);
-    float yOffset = 1.0/float(texSize.y);
+    float offset = 1.0/float(texSize.x);
     /******************************************/
 
     float shadowmap_factor = 0.0;
@@ -67,7 +66,7 @@ float getAttenuationPCF( vec4 shadowmapCoord ) {
         for (int x = -PCF_SAMPLES ; x <= PCF_SAMPLES ; x++) {
 
             //calculate offstes with size of texels
-            vec2 Offsets = vec2(x * xOffset, y * yOffset);
+            vec2 Offsets = vec2(x * offset, y * offset);
 
             //add offsets to coordinates
             vec3 UVC = vec3(UVCoords + Offsets, z - SHADOW_BIAS);
