@@ -2,10 +2,10 @@
 
 #define LIGHTS 1
 #define BLINN_ADD_SHINE 100
-#define SHADOW_BIAS 0.0004
+#define SHADOW_BIAS 0.0008
 #define AMBILIGHT 0.15
 #define AMBILIGHT_MULT AMBILIGHT*3
-#define PCF_SAMPLES 1
+#define PCF_SAMPLES 4
 
 in vec3 N;
 in vec3 V;
@@ -34,16 +34,15 @@ uniform sampler2DShadow uShadowmap;
 out vec4 FragColor;
 
 vec3 calculateDiffuse(vec3 N, vec3 L, vec3 lightColor, float nDotl) {
-    vec3 diffuseLighting = lightColor * vec3(max(nDotl, 0.0)) ;
-    return diffuseLighting;
+    return lightColor * vec3(max(nDotl, 0.0));
 }
 
-vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float nDotl) {
+vec3 calculateSpecularBlinn(vec3 N, vec3 V, vec3 L, vec3 lightColor, float ambilight, float nDotl, float reflectivity, float shininess) {
     vec3 specular = vec3(0,0,0);
-    if(nDotl > AMBILIGHT) {
+    if(nDotl > ambilight) {
         vec3 lightAddCam = L+V;
         vec3 H = normalize( lightAddCam/sqrt(dot(lightAddCam,lightAddCam)) );
-        specular =  lightColor * uReflectivity * vec3(max(pow(dot(N, H), uShininess+BLINN_ADD_SHINE), 0.0));
+        specular = lightColor * reflectivity * vec3(max(pow(dot(N, H), shininess+BLINN_ADD_SHINE), 0.0));
     }
     return specular;
 }
@@ -57,8 +56,7 @@ float getAttenuationPCF( vec4 shadowmapCoord ) {
 
     /************ get texturesize *************/
     ivec2 texSize = textureSize(uShadowmap,0);
-    float xOffset = 1.0/float(texSize.x);
-    float yOffset = 1.0/float(texSize.y);
+    float offset = 1.0/float(texSize.x);
     /******************************************/
 
     float shadowmap_factor = 0.0;
@@ -67,7 +65,7 @@ float getAttenuationPCF( vec4 shadowmapCoord ) {
         for (int x = -PCF_SAMPLES ; x <= PCF_SAMPLES ; x++) {
 
             //calculate offstes with size of texels
-            vec2 Offsets = vec2(x * xOffset, y * yOffset);
+            vec2 Offsets = vec2(x * offset, y * offset);
 
             //add offsets to coordinates
             vec3 UVC = vec3(UVCoords + Offsets, z - SHADOW_BIAS);
@@ -96,7 +94,7 @@ void main(void) {
         float lightIntense = attenuationArray[i];
 
         vec3 diffuse = calculateDiffuse(N, L[i], uLightColorArray[i],nDotl);
-        vec3 specular = calculateSpecularBlinn(N, V, L[i], uLightColorArray[i], nDotl);
+        vec3 specular = calculateSpecularBlinn(N, V, L[i], uLightColorArray[i], AMBILIGHT, nDotl, uReflectivity, uShininess);
 
         diffuseFinal += diffuse*lightIntense;
         specularFinal += specular*lightIntense;

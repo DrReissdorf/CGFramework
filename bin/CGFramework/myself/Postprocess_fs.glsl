@@ -15,13 +15,8 @@ out vec4 FragColor;
 
 uniform sampler2D uTexture;
 
-vec4 gammaCorrection(vec4 color) {
-    vec4 newColor;
-
-    newColor.rgb = pow(color.rgb, vec3(1.0 / GAMMA_CORRECTION_VALUE));
-    newColor.a = color.a;
-
-    return newColor;
+vec3 gammaCorrection(vec3 color) {
+    return pow(color.rgb, vec3(1.0 / GAMMA_CORRECTION_VALUE));
 }
 
 vec4 exponentialToneMapping(vec4 color, float exposure) {
@@ -33,27 +28,19 @@ vec4 exponentialToneMapping(vec4 color, float exposure) {
     return newColor;
 }
 
-vec4 filmicToneMapping(vec4 color) {
-    vec4 newColor;
+vec3 filmicToneMapping(vec3 color) {
+    vec3 newColor;
 
-    newColor.x = ((color.x*(A*color.x+C*B)+D*E)/(color.x*(A*color.x+B)+D*F)) - E/F;
-    newColor.y = ((color.y*(A*color.y+C*B)+D*E)/(color.y*(A*color.y+B)+D*F)) - E/F;
-    newColor.z = ((color.z*(A*color.z+C*B)+D*E)/(color.z*(A*color.z+B)+D*F)) - E/F;
-    newColor.a = color.a;
-
-    //L_filmic = ( L(C)/L(WHITE) )
-    float WHITE_LIN = ((WHITE*(A*WHITE+C*B)+D*E)/(WHITE*(A*WHITE+B)+D*F)) - E/F;
-    newColor.x /= WHITE_LIN;
-    newColor.y /= WHITE_LIN;
-    newColor.z /= WHITE_LIN;
+    newColor = ((color*(A*color+C*B)+D*E)/(color*(A*color+B)+D*F)) - E/F;
+    newColor /= ((WHITE*(A*WHITE+C*B)+D*E)/(WHITE*(A*WHITE+B)+D*F)) - E/F;
 
     return newColor;
 }
 
 void main() {
     vec4 texColor = texture(uTexture,vTextureCoords);
-    vec4 filmic =  filmicToneMapping(texColor);
+    vec4 filmic =  vec4(filmicToneMapping(texColor.xyz),1.0);
  //   vec4 exponential = exponentialToneMapping(texColor, 1.0);
     FragColor = filmic;
-    FragColor = gammaCorrection(FragColor);
+    FragColor = vec4(gammaCorrection(FragColor.rgb),1.0);
 }
